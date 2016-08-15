@@ -472,7 +472,7 @@ bool MeshDisplayCustom::updateCamera(bool update_image)
 
     context_->getFrameManager()->getTransform( last_image_->header.frame_id, last_image_->header.stamp, position, orientation );
 
-    position = Ogre::Vector3(0.5f, -0.5f, 1.0f);
+    position = Ogre::Vector3(0.5f, -0.5f, 1.0f/590.0f);
     orientation = Ogre::Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
 
 
@@ -537,8 +537,8 @@ bool MeshDisplayCustom::updateCamera(bool update_image)
             projector_node_->setPosition( position );
             projector_node_->setOrientation( orientation );
 
-            std::cout << position << std::endl;
-            std::cout << orientation << std::endl;
+            // std::cout << position << std::endl;
+            // std::cout << orientation << std::endl;
         }
 
         // calculate the projection matrix
@@ -565,8 +565,8 @@ bool MeshDisplayCustom::updateCamera(bool update_image)
         hfov_ = atan( 1.0f / proj_matrix[0][0] ) * 2.0f * 57.2957795f;
         vfov_ = atan( 1.0f / proj_matrix[1][1] ) * 2.0f * 57.2957795f;
 
-        // if(decal_frustum_ != NULL)
-            // decal_frustum_->setCustomProjectionMatrix(true, proj_matrix);
+        if(decal_frustum_ != NULL)
+            decal_frustum_->setCustomProjectionMatrix(true, proj_matrix);
 
         // ROS_INFO(" Camera (%f, %f)", proj_matrix[0][0], proj_matrix[1][1]);
         // ROS_INFO(" Render Panel: %x   Viewport: %x", render_panel_, render_panel_->getViewport());
