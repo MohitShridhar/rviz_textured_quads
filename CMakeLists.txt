@@ -3,7 +3,7 @@ project(rviz_plugin_image_mesh)
 
 ## Find catkin and any catkin packages on which
 ## this package depends at build time
-find_package(catkin REQUIRED COMPONENTS roscpp rospy roslib std_msgs sensor_msgs rviz pluginlib class_loader cv_bridge)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy roslib std_msgs sensor_msgs shape_msgs rviz pluginlib class_loader cv_bridge)
 
 ## This plugin includes Qt widgets, so we must include Qt like so:
 find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
@@ -11,7 +11,7 @@ include(${QT_USE_FILE})
 
 find_package(OpenGL REQUIRED)
 
-## I prefer the Qt signals and slots to avoid defining "emit", "slots",
+## I (original author) prefer the Qt signals and slots to avoid defining "emit", "slots",
 ## etc because they can conflict with boost signals, so define QT_NO_KEYWORDS here.
 add_definitions(-DQT_NO_KEYWORDS)
 
@@ -28,6 +28,7 @@ catkin_package(
     roslib
     std_msgs 
     sensor_msgs
+    shape_msgs
     rviz 
     pluginlib 
     class_loader
@@ -44,7 +45,6 @@ include_directories(SYSTEM
                     ${QT_INCLUDE_DIR})
                     
 link_directories(${catkin_LIBRARY_DIRS})
-
 
 
 # Convert the Qt Signals and Slots for QWidget events
@@ -72,11 +72,17 @@ install(DIRECTORY textures
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rviz_plugin_mesh_display_custom
 )
 
-
-
-
 install(FILES
   mesh_display_custom_plugin_description.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
-#install(DIRECTORY icons DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+# Test 1: Single image
+add_executable(single_image_test tests/single_image_test.cpp ${SOURCE_FILES} ${HEADER_FILES})
+
+add_dependencies(single_image_test ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+  ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(single_image_test
+  ${catkin_LIBRARIES}
+)

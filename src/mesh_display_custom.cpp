@@ -164,7 +164,7 @@ void MeshDisplayCustom::addDecalToMaterial(const Ogre::String& matName)
     if(!resource_manager.resourceGroupExists(resource_group_name))
     {
         resource_manager.createResourceGroup(resource_group_name);
-        resource_manager.addResourceLocation(ros::package::getPath("vigir_ocs_rviz_plugins")+"/vigir_ocs_rviz_plugin_mesh_display_custom/textures/", "FileSystem", resource_group_name, false);
+        resource_manager.addResourceLocation(ros::package::getPath("rviz_plugin_image_mesh")+"/tests/textures/", "FileSystem", resource_group_name, false);
         resource_manager.initialiseResourceGroup(resource_group_name);
     }
     // loads files into our resource manager
@@ -173,6 +173,7 @@ void MeshDisplayCustom::addDecalToMaterial(const Ogre::String& matName)
     Ogre::TextureUnitState* tex_state = pass->createTextureUnitState();//"Decal.png");
     tex_state->setTextureName(texture_.getTexture()->getName());
     tex_state->setProjectiveTexturing(true, decal_frustum_);
+
     tex_state->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
     tex_state->setTextureFiltering(Ogre::FO_POINT, Ogre::FO_LINEAR, Ogre::FO_NONE);
     tex_state->setColourOperation(Ogre::LBO_REPLACE); //don't accept additional effects
@@ -406,12 +407,12 @@ void MeshDisplayCustom::update( float wall_dt, float ros_dt )
 {
     time_since_last_transform_ += wall_dt;
 
-//    // just added automatic rotation to make it easier  to test things
-//    if(projector_node_ != NULL)
-//    {
-//        projector_node_->rotate(Ogre::Vector3::UNIT_Y, Ogre::Degree(wall_dt * 50));
-//        rotation_property_->setQuaternion(projector_node_->getOrientation());
-//    }
+//    just added automatic rotation to make it easier  to test things
+   // if(projector_node_ != NULL)
+   // {
+   //     projector_node_->rotate(Ogre::Vector3::UNIT_Y, Ogre::Degree(wall_dt * 50));
+   //     rotation_property_->setQuaternion(projector_node_->getOrientation());
+   // }
 
     if( !topic_property_->getTopic().isEmpty() )
     {
@@ -454,7 +455,7 @@ bool MeshDisplayCustom::updateCamera(bool update_image)
         last_image_ = texture_.getImage();
     }
     if(!last_info_ || !last_image_)
-    {
+    {        
         return false;
     }
 
@@ -471,11 +472,15 @@ bool MeshDisplayCustom::updateCamera(bool update_image)
 
     context_->getFrameManager()->getTransform( last_image_->header.frame_id, last_image_->header.stamp, position, orientation );
 
-    // convert vision (Z-forward) frame to ogre frame (Z-out)
-    orientation = orientation * Ogre::Quaternion( Ogre::Degree( 180 ), Ogre::Vector3::UNIT_X );
+    position = Ogre::Vector3(0.5f, -0.5f, 1.0f);
+    orientation = Ogre::Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
 
-    //std::cout << "CameraInfo dimensions: " << last_info_->width << " x " << last_info_->height << std::endl;
-    //std::cout << "Texture dimensions: " << last_image_->width << " x " << last_image_->height << std::endl;
+
+    // convert vision (Z-forward) frame to ogre frame (Z-out)
+    orientation = orientation * Ogre::Quaternion( Ogre::Degree( 180 ), Ogre::Vector3::UNIT_Z );
+
+    // std::cout << "CameraInfo dimensions: " << last_info_->width << " x " << last_info_->height << std::endl;
+    // std::cout << "Texture dimensions: " << last_image_->width << " x " << last_image_->height << std::endl;
     //std::cout << "Original image dimensions: " << last_image_->width*full_image_binning_ << " x " << last_image_->height*full_image_binning_ << std::endl;
 
 
@@ -531,6 +536,9 @@ bool MeshDisplayCustom::updateCamera(bool update_image)
         {
             projector_node_->setPosition( position );
             projector_node_->setOrientation( orientation );
+
+            std::cout << position << std::endl;
+            std::cout << orientation << std::endl;
         }
 
         // calculate the projection matrix
@@ -557,11 +565,11 @@ bool MeshDisplayCustom::updateCamera(bool update_image)
         hfov_ = atan( 1.0f / proj_matrix[0][0] ) * 2.0f * 57.2957795f;
         vfov_ = atan( 1.0f / proj_matrix[1][1] ) * 2.0f * 57.2957795f;
 
-        if(decal_frustum_ != NULL)
-            decal_frustum_->setCustomProjectionMatrix(true, proj_matrix);
+        // if(decal_frustum_ != NULL)
+            // decal_frustum_->setCustomProjectionMatrix(true, proj_matrix);
 
-        //ROS_INFO(" Camera (%f, %f)", proj_matrix[0][0], proj_matrix[1][1]);
-        //ROS_INFO(" Render Panel: %x   Viewport: %x", render_panel_, render_panel_->getViewport());
+        // ROS_INFO(" Camera (%f, %f)", proj_matrix[0][0], proj_matrix[1][1]);
+        // ROS_INFO(" Render Panel: %x   Viewport: %x", render_panel_, render_panel_->getViewport());
     }
 
     setStatus( StatusProperty::Ok, "Time", "ok" );
