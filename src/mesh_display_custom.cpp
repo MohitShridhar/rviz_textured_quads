@@ -64,6 +64,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include "rviz_plugin_image_mesh/RvizDisplayImages.h"
+
 #include "mesh_display_custom.h"
 
 namespace rviz
@@ -95,6 +97,11 @@ MeshDisplayCustom::MeshDisplayCustom()
                                             QString::fromStdString( ros::message_traits::datatype<shape_msgs::Mesh>() ),
                                             "shape_msgs::Mesh topic to subscribe to.",
                                             this, SLOT( updateTopic() ));
+
+    display_images_topic_property_ = new RosTopicProperty( "Display Images Topic", "",
+                                            QString::fromStdString( ros::message_traits::datatype<rviz_plugin_image_mesh::RvizDisplayImages>() ),
+                                            "shape_msgs::Mesh topic to subscribe to.",
+                                            this, SLOT( updateDisplayImages() ));
 
     mesh_alpha_property_ = new FloatProperty( "Mesh Alpha", 0.6f,
                                               "Amount of transparency for the mesh.", this, SLOT( updateMeshProperties() ) );
@@ -262,6 +269,12 @@ void MeshDisplayCustom::updateMesh( const shape_msgs::Mesh::ConstPtr& mesh )
     last_mesh_ = *mesh;
 }
 
+void MeshDisplayCustom::updateImageMeshes( const rviz_plugin_image_mesh::RvizDisplayImages::ConstPtr& images )
+{
+    // TEST:
+    processImage(images->images[0]);
+}
+
 void MeshDisplayCustom::updateMeshProperties()
 {
     // update transformations
@@ -298,6 +311,12 @@ void MeshDisplayCustom::updateTopic()
     subscribe();
 }
 
+void MeshDisplayCustom::updateDisplayImages()
+{
+    unsubscribe();
+    subscribe();
+}
+
 void MeshDisplayCustom::subscribe()
 {
     if ( !isEnabled() )
@@ -315,6 +334,16 @@ void MeshDisplayCustom::subscribe()
         catch( ros::Exception& e )
         {
             setStatus( StatusProperty::Error, "Topic", QString( "Error subscribing: " ) + e.what() );
+        }
+
+        try
+        {
+            rviz_display_images_sub_ = nh_.subscribe(display_images_topic_property_->getTopicStd(), 1, &MeshDisplayCustom::updateImageMeshes, this);
+            setStatus( StatusProperty::Ok, "Images Topic", "OK" );
+        }
+        catch( ros::Exception& e )
+        {
+            setStatus( StatusProperty::Error, "Images Topic", QString( "Error subscribing: " ) + e.what() );
         }
     }
 
@@ -345,6 +374,7 @@ void MeshDisplayCustom::unsubscribe()
     ImageDisplayBase::unsubscribe();
     caminfo_sub_.unsubscribe();
     pose_sub_.shutdown();
+    rviz_display_images_sub_.shutdown();
 }
 
 void MeshDisplayCustom::load()
@@ -604,6 +634,40 @@ void MeshDisplayCustom::reset()
 
 /* This is called by incomingMessage(). */
 void MeshDisplayCustom::processMessage(const sensor_msgs::Image::ConstPtr& msg)
+{
+    // //std::cout<<"camera image received"<<std::endl;
+    // cv_bridge::CvImagePtr cv_ptr;
+
+    // // simply converting every image to RGBA
+    // try
+    // {
+    //     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::RGBA8);
+    // }
+    // catch (cv_bridge::Exception& e)
+    // {
+    //     ROS_ERROR("MeshDisplayCustom: cv_bridge exception: %s", e.what());
+    //     return;
+    // }
+
+    // // update image alpha
+    // for(int i = 0; i < cv_ptr->image.rows; i++)
+    // {
+    //     for(int j = 0; j < cv_ptr->image.cols; j++)
+    //     {
+    //         cv::Vec4b& pixel = cv_ptr->image.at<cv::Vec4b>(i,j);
+    //         pixel[3] = image_alpha_property_->getFloat()*255;
+    //     }
+    // }
+
+    // // add completely white transparent border to the image so that it won't replicate colored pixels all over the mesh
+    // cv::Scalar value(255,255,255,0);
+    // cv::copyMakeBorder(cv_ptr->image,cv_ptr->image,1,1,1,1,cv::BORDER_CONSTANT,value);
+
+    // // Output modified video stream
+    // texture_.addMessage(cv_ptr->toImageMsg());
+}
+
+void MeshDisplayCustom::processImage(const sensor_msgs::Image& msg)
 {
     //std::cout<<"camera image received"<<std::endl;
     cv_bridge::CvImagePtr cv_ptr;

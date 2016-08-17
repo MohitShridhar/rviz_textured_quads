@@ -3,7 +3,7 @@ project(rviz_plugin_image_mesh)
 
 ## Find catkin and any catkin packages on which
 ## this package depends at build time
-find_package(catkin REQUIRED COMPONENTS roscpp rospy roslib std_msgs sensor_msgs shape_msgs rviz pluginlib class_loader cv_bridge)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy roslib std_msgs sensor_msgs shape_msgs rviz pluginlib class_loader cv_bridge message_generation geometry_msgs sensor_msgs)
 
 ## This plugin includes Qt widgets, so we must include Qt like so:
 find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
@@ -14,6 +14,21 @@ find_package(OpenGL REQUIRED)
 ## I (original author) prefer the Qt signals and slots to avoid defining "emit", "slots",
 ## etc because they can conflict with boost signals, so define QT_NO_KEYWORDS here.
 add_definitions(-DQT_NO_KEYWORDS)
+
+include_directories(SYSTEM "msg_gen/cpp/include")
+
+add_message_files(
+  FILES
+  RvizDisplayImages.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+  sensor_msgs
+)
+
 
 catkin_package(
   LIBRARIES
@@ -33,6 +48,8 @@ catkin_package(
     pluginlib 
     class_loader
     cv_bridge
+  	geometry_msgs
+  	sensor_msgs
 )
 
 

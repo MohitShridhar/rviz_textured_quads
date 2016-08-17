@@ -65,6 +65,8 @@
 #include <OGRE/OgreRenderTargetListener.h>
 #include <OGRE/OgreRenderQueueListener.h>
 
+#include <rviz_plugin_image_mesh/RvizDisplayImages.h>
+
 #include <map>
 
 namespace Ogre
@@ -109,6 +111,7 @@ public:
 private Q_SLOTS:
   void updateMeshProperties();
   void updateTopic();
+  void updateDisplayImages();
   void updateName();
   virtual void updateQueueSize();
 
@@ -122,6 +125,7 @@ protected:
 
   // This is called by incomingMessage().
   virtual void processMessage(const sensor_msgs::Image::ConstPtr& msg);
+  void processImage(const sensor_msgs::Image& msg);
 
   virtual void subscribe();
   virtual void unsubscribe();
@@ -135,10 +139,12 @@ private:
   void createProjector();
   void addDecalToMaterial(const Ogre::String& matName);
   void updateMesh( const shape_msgs::Mesh::ConstPtr& mesh );
+  void updateImageMeshes( const rviz_plugin_image_mesh::RvizDisplayImages::ConstPtr& images );
 
   float time_since_last_transform_;
 
   RosTopicProperty* mesh_topic_property_;
+  RosTopicProperty* display_images_topic_property_;
   FloatProperty* mesh_alpha_property_;
   FloatProperty* image_alpha_property_;
   ColorProperty* mesh_color_property_;
@@ -169,6 +175,7 @@ private:
   ROSImageTexture texture_;
 
   ros::Subscriber pose_sub_;
+  ros::Subscriber rviz_display_images_sub_;
 
   Ogre::Frustum* decal_frustum_;
   std::vector<Ogre::Frustum*> filter_frustum_; //need multiple filters (back, up, down, left, right)
