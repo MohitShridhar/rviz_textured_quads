@@ -16,7 +16,7 @@ def pub_image():
     rospy.init_node('rviz_display_images_test', anonymous=True)
     image_pub = rospy.Publisher("/display_images", RvizDisplayImages, queue_size=10)
 
-    img = cv2.imread('./textures/bebop_drone.jpg',cv2.IMREAD_COLOR)
+    img = cv2.imread('./textures/red.jpg',cv2.IMREAD_COLOR)
     img_msg = CvBridge().cv2_to_imgmsg(img, "bgr8")
 
     display_images = RvizDisplayImages()
@@ -43,7 +43,7 @@ def pub_image():
 
     display_images.images = np.array([img_msg])
     display_images.poses = np.array([pose])
-    display_images.scales = np.array([1.0, 1.0 * (332./590.)])
+    display_images.scales = np.array([1.0, 1.0 * ((1.0 * img_msg.height)/img_msg.width)])
 
     rate = rospy.Rate(10) # 10hz
     while not rospy.is_shutdown():
