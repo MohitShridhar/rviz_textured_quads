@@ -20,7 +20,8 @@ include_directories(SYSTEM "msg_gen/cpp/include")
 
 add_message_files(
   FILES
-  RvizDisplayImages.msg
+  TexturedQuad.msg
+  TexturedQuadArray.msg
 )
 
 generate_messages(

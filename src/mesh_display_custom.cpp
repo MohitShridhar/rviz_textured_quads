@@ -64,8 +64,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include "rviz_plugin_image_mesh/RvizDisplayImages.h"
-
 #include "mesh_display_custom.h"
 
 namespace rviz
@@ -82,7 +80,7 @@ bool validateFloats(const sensor_msgs::CameraInfo& msg)
 }
 
 MeshDisplayCustom::MeshDisplayCustom()
-    : ImageDisplayBase()
+    : Display()
     , time_since_last_transform_( 0.0f )
     , mesh_node_(NULL)
     , projector_node_(NULL)
@@ -93,13 +91,8 @@ MeshDisplayCustom::MeshDisplayCustom()
     image_alpha_property_ = new FloatProperty( "Image Alpha", 1.0f,
                                                "Amount of transparency for the mesh with image texture overlay.", this, SLOT( updateMeshProperties() ) );
 
-    mesh_topic_property_ = new RosTopicProperty( "Mesh Topic", "",
-                                            QString::fromStdString( ros::message_traits::datatype<shape_msgs::Mesh>() ),
-                                            "shape_msgs::Mesh topic to subscribe to.",
-                                            this, SLOT( updateTopic() ));
-
     display_images_topic_property_ = new RosTopicProperty( "Display Images Topic", "",
-                                            QString::fromStdString( ros::message_traits::datatype<rviz_plugin_image_mesh::RvizDisplayImages>() ),
+                                            QString::fromStdString( ros::message_traits::datatype<rviz_plugin_image_mesh::TexturedQuadArray>() ),
                                             "shape_msgs::Mesh topic to subscribe to.",
                                             this, SLOT( updateDisplayImages() ));
 
@@ -108,34 +101,16 @@ MeshDisplayCustom::MeshDisplayCustom()
 
     mesh_color_property_ = new ColorProperty( "Mesh Color", QColor( 255, 255, 255 ),
                                               "Color to mesh when not overlayed by image texture.", this, SLOT( updateMeshProperties() ) );
-
-    // this shouldn't necessarily be here, and we should get this from a camera topic with camera info
-    position_property_ = new VectorProperty( "Projector Position", Ogre::Vector3::ZERO,
-                                             "position of the texture projector object in /world",
-                                             this, SLOT( updateMeshProperties() ) );
-    rotation_property_ = new QuaternionProperty("Projector Rotation", Ogre::Quaternion::IDENTITY,"rotation of the texture projector object",this,SLOT(updateMeshProperties()));
-
 }
 
 MeshDisplayCustom::~MeshDisplayCustom()
 {
     unsubscribe();
-    caminfo_tf_filter_->clear();
-    delete caminfo_tf_filter_;
 }
 
 void MeshDisplayCustom::onInitialize()
 {
-    ImageDisplayBase::onInitialize();
-
-    // it will only accept images if the frame in camera info is resolved
-    caminfo_tf_filter_ = new tf::MessageFilter<sensor_msgs::CameraInfo>( *context_->getTFClient(), fixed_frame_.toStdString(),
-                                                                         queue_size_property_->getInt(), update_nh_ );
-
-    context_->getSceneManager()->addRenderQueueListener(this);
-
-    caminfo_tf_filter_->connectInput(caminfo_sub_);
-    caminfo_tf_filter_->registerCallback(boost::bind(&MeshDisplayCustom::caminfoCallback, this, _1));
+    Display::onInitialize();
 }
 
 void MeshDisplayCustom::createProjector()
@@ -194,81 +169,6 @@ void MeshDisplayCustom::addDecalToMaterial(const Ogre::String& matName)
     }
 }
 
-void MeshDisplayCustom::setPose()
-{
-    if(projector_node_ == NULL)
-        return;
-
-    projector_node_->setPosition(position_property_->getVector().x,
-                            position_property_->getVector().y,
-                            position_property_->getVector().z);
-    projector_node_->setOrientation(rotation_property_->getQuaternion().w,
-                               rotation_property_->getQuaternion().x,
-                               rotation_property_->getQuaternion().y,
-                               rotation_property_->getQuaternion().z);
-}
-
-void MeshDisplayCustom::updateMesh( const shape_msgs::Mesh::ConstPtr& mesh )
-{
-    // boost::mutex::scoped_lock lock( mesh_mutex_ );
-
-    // // create our scenenode and material
-    // load();
-
-    // // set properties
-    // setPose();
-
-    // if (!manual_object_)
-    // {
-    //     static uint32_t count = 0;
-    //     std::stringstream ss;
-    //     ss << "MeshObject" << count++;
-    //     manual_object_ = context_->getSceneManager()->createManualObject(ss.str());
-    //     mesh_node_->attachObject(manual_object_);
-    // }
-
-    // // If we have the same number of tris as previously, just update the object
-    // if (last_mesh_.vertices.size() > 0 && mesh.vertices.size()*2 == last_mesh_.vertices.size())
-    // {
-    //     manual_object_->beginUpdate(0);
-    // }
-    // else // Otherwise clear it and begin anew
-    // {
-    //     manual_object_->clear();
-    //     manual_object_->estimateVertexCount(mesh.vertices.size()*2);
-    //     manual_object_->begin(mesh_material_->getName(), Ogre::RenderOperation::OT_TRIANGLE_LIST);
-    // }
-
-    // const std::vector<geometry_msgs::Point>& points = mesh.vertices;
-    // for(size_t i = 0; i < mesh.triangles.size(); i++)
-    // {
-    //     // make sure we have front-face/back-face triangles
-    //     for(int side = 0; side < 2; side++)
-    //     {
-    //         std::vector<Ogre::Vector3> corners(3);
-    //         for(size_t c = 0; c < 3; c++)
-    //         {
-    //             size_t corner = side ? 2-c : c; // order of corners if side == 1
-    //             corners[corner] = Ogre::Vector3(points[mesh.triangles[i].vertex_indices[corner]].x, points[mesh.triangles[i].vertex_indices[corner]].y, points[mesh.triangles[i].vertex_indices[corner]].z);
-    //         }
-    //         Ogre::Vector3 normal = (corners[1] - corners[0]).crossProduct(corners[2] - corners[0]);
-    //         normal.normalise();
-
-    //         for(size_t c = 0; c < 3; c++)
-    //         {
-    //             manual_object_->position(corners[c]);
-    //             manual_object_->normal(normal);
-    //         }
-    //     }
-    // }
-
-    // manual_object_->end();
-
-    // mesh_material_->setCullingMode(Ogre::CULL_NONE);
-
-    // last_mesh_ = *mesh;
-}
-
 shape_msgs::Mesh MeshDisplayCustom::constructMesh( geometry_msgs::Pose mesh_origin, float width, float height )
 {
     shape_msgs::Mesh mesh;
@@ -316,11 +216,11 @@ shape_msgs::Mesh MeshDisplayCustom::constructMesh( geometry_msgs::Pose mesh_orig
     return mesh;
 }
 
-void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::RvizDisplayImages::ConstPtr& images )
+void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images )
 {
-    geometry_msgs::Pose mesh_origin = images->poses[0];
-    float width = images->scales[0];
-    float height = images->scales[1];
+    geometry_msgs::Pose mesh_origin = images->quads[0].pose;
+    float width = images->quads[0].width;
+    float height = images->quads[0].height;
 
     shape_msgs::Mesh mesh = constructMesh(mesh_origin, width, height);
 
@@ -330,11 +230,9 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::RvizDispla
     load();
 
     // set properties
-    // setPose();
     mesh_pose_ = mesh_origin;
-
-    img_width_ = images->images[0].width;
-    img_height_ = images->images[0].height;
+    img_width_ = images->quads[0].image.width;
+    img_height_ = images->quads[0].image.height;
 
     if (!manual_object_)
     {
@@ -387,18 +285,15 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::RvizDispla
     last_mesh_ = mesh;
 }
 
-void MeshDisplayCustom::updateImageMeshes( const rviz_plugin_image_mesh::RvizDisplayImages::ConstPtr& images )
+void MeshDisplayCustom::updateImageMeshes( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images )
 {
     // TEST:
-    processImage(images->images[0]);
+    processImage(images->quads[0].image);
     constructQuads(images);
 }
 
 void MeshDisplayCustom::updateMeshProperties()
 {
-    // update transformations
-    setPose();
-
     // update color/alpha
     Ogre::Technique* technique = mesh_material_->getTechnique(0);
     Ogre::Pass* pass = technique->getPass(0);
@@ -424,12 +319,6 @@ void MeshDisplayCustom::updateMeshProperties()
     context_->queueRender();
 }
 
-void MeshDisplayCustom::updateTopic()
-{
-    unsubscribe();
-    subscribe();
-}
-
 void MeshDisplayCustom::updateDisplayImages()
 {
     unsubscribe();
@@ -443,56 +332,22 @@ void MeshDisplayCustom::subscribe()
         return;
     }
 
-    if( !mesh_topic_property_->getTopic().isEmpty() )
+    if( !display_images_topic_property_->getTopic().isEmpty() )
     {
-        try
-        {
-            pose_sub_ = nh_.subscribe( mesh_topic_property_->getTopicStd(), 1, &MeshDisplayCustom::updateMesh, this );
-            setStatus( StatusProperty::Ok, "Topic", "OK" );
-        }
-        catch( ros::Exception& e )
-        {
-            setStatus( StatusProperty::Error, "Topic", QString( "Error subscribing: " ) + e.what() );
-        }
-
         try
         {
             rviz_display_images_sub_ = nh_.subscribe(display_images_topic_property_->getTopicStd(), 1, &MeshDisplayCustom::updateImageMeshes, this);
-            setStatus( StatusProperty::Ok, "Images Topic", "OK" );
+            setStatus( StatusProperty::Ok, "Display Images Topic", "OK" );
         }
         catch( ros::Exception& e )
         {
-            setStatus( StatusProperty::Error, "Images Topic", QString( "Error subscribing: " ) + e.what() );
-        }
-    }
-
-    if( !topic_property_->getTopic().isEmpty() )
-    {
-        std::string target_frame = fixed_frame_.toStdString();
-        ImageDisplayBase::enableTFFilter(target_frame);
-
-        ImageDisplayBase::subscribe();
-
-        std::string topic = topic_property_->getTopicStd();
-        std::string caminfo_topic = image_transport::getCameraInfoTopic(topic);
-
-        try
-        {
-          caminfo_sub_.subscribe( update_nh_, caminfo_topic, 1 );
-          setStatus( StatusProperty::Ok, "Camera Info", "OK" );
-        }
-        catch( ros::Exception& e )
-        {
-          setStatus( StatusProperty::Error, "Camera Info", QString( "Error subscribing: ") + e.what() );
+            setStatus( StatusProperty::Error, "Display Images Topic", QString( "Error subscribing: " ) + e.what() );
         }
     }
 }
 
 void MeshDisplayCustom::unsubscribe()
 {
-    ImageDisplayBase::unsubscribe();
-    caminfo_sub_.unsubscribe();
-    pose_sub_.shutdown();
     rviz_display_images_sub_.shutdown();
 }
 
@@ -556,40 +411,15 @@ void MeshDisplayCustom::update( float wall_dt, float ros_dt )
 {
     time_since_last_transform_ += wall_dt;
 
-//    just added automatic rotation to make it easier  to test things
-   // if(projector_node_ != NULL)
-   // {
-   //     projector_node_->rotate(Ogre::Vector3::UNIT_Y, Ogre::Degree(wall_dt * 50));
-   //     rotation_property_->setQuaternion(projector_node_->getOrientation());
-   // }
-
-    if( !topic_property_->getTopic().isEmpty() )
+    if( !display_images_topic_property_->getTopic().isEmpty() )
     {
-        std::string caminfo_topic = image_transport::getCameraInfoTopic(topic_property_->getTopicStd());
-        if(caminfo_sub_.getTopic().compare(caminfo_topic) != 0)
-        {
-            //std::cout<<"updating topic" <<std::endl;
-
-            caminfo_sub_.unsubscribe();
-            try
-            {
-                caminfo_sub_.subscribe( update_nh_, caminfo_topic, 1 );
-                // std::cout<<"The subscription happens"<<std::endl;
-                setStatus( StatusProperty::Ok, "Camera Info", "OK" );
-            }
-            catch( ros::Exception& e )
-            {
-                setStatus( StatusProperty::Error, "Camera Info", QString( "Error subscribing: ") + e.what() );
-            }
-        }
-
         try
         {
             updateCamera(texture_.update());
         }
         catch( UnsupportedImageEncoding& e )
         {
-            setStatus(StatusProperty::Error, "Image", e.what());
+            setStatus(StatusProperty::Error, "Display Image", e.what());
         }
     }
 }
@@ -598,19 +428,10 @@ bool MeshDisplayCustom::updateCamera(bool update_image)
 {
     if(update_image)
     {
-        boost::mutex::scoped_lock lock( caminfo_mutex_ );
-
-        last_info_ = current_caminfo_;
         last_image_ = texture_.getImage();
     }
     if(!img_height_ || !img_width_ || !last_image_)
     {        
-        return false;
-    }
-
-    if(!validateFloats( *last_info_ ))
-    {
-        setStatus( StatusProperty::Error, "Camera Info", "Contains invalid floating point values (nans or infs)" );
         return false;
     }
 
@@ -751,51 +572,13 @@ void MeshDisplayCustom::clear()
     texture_.clear();
     context_->queueRender();
 
-    current_caminfo_.reset();
-    setStatus( StatusProperty::Warn, "Camera Info",
-               "No CameraInfo received on [" + QString::fromStdString( caminfo_sub_.getTopic() ) + "].  Topic may not exist.");
     setStatus( StatusProperty::Warn, "Image", "No Image received");
 }
 
 void MeshDisplayCustom::reset()
 {
-    ImageDisplayBase::reset();
+    Display::reset();
     clear();
-}
-
-/* This is called by incomingMessage(). */
-void MeshDisplayCustom::processMessage(const sensor_msgs::Image::ConstPtr& msg)
-{
-    // //std::cout<<"camera image received"<<std::endl;
-    // cv_bridge::CvImagePtr cv_ptr;
-
-    // // simply converting every image to RGBA
-    // try
-    // {
-    //     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::RGBA8);
-    // }
-    // catch (cv_bridge::Exception& e)
-    // {
-    //     ROS_ERROR("MeshDisplayCustom: cv_bridge exception: %s", e.what());
-    //     return;
-    // }
-
-    // // update image alpha
-    // for(int i = 0; i < cv_ptr->image.rows; i++)
-    // {
-    //     for(int j = 0; j < cv_ptr->image.cols; j++)
-    //     {
-    //         cv::Vec4b& pixel = cv_ptr->image.at<cv::Vec4b>(i,j);
-    //         pixel[3] = image_alpha_property_->getFloat()*255;
-    //     }
-    // }
-
-    // // add completely white transparent border to the image so that it won't replicate colored pixels all over the mesh
-    // cv::Scalar value(255,255,255,0);
-    // cv::copyMakeBorder(cv_ptr->image,cv_ptr->image,1,1,1,1,cv::BORDER_CONSTANT,value);
-
-    // // Output modified video stream
-    // texture_.addMessage(cv_ptr->toImageMsg());
 }
 
 void MeshDisplayCustom::processImage(const sensor_msgs::Image& msg)
@@ -830,29 +613,6 @@ void MeshDisplayCustom::processImage(const sensor_msgs::Image& msg)
 
     // Output modified video stream
     texture_.addMessage(cv_ptr->toImageMsg());
-}
-
-void MeshDisplayCustom::caminfoCallback( const sensor_msgs::CameraInfo::ConstPtr& msg )
-{
-    //std::cout<<"camera info received"<<std::endl;
-    boost::mutex::scoped_lock lock( caminfo_mutex_ );
-    current_caminfo_ = msg;
-}
-
-
-void MeshDisplayCustom::updateQueueSize()
-{
-    caminfo_tf_filter_->setQueueSize( (uint32_t) queue_size_property_->getInt() );
-    ImageDisplayBase::updateQueueSize();
-}
-
-
-void MeshDisplayCustom::fixedFrameChanged()
-{
-    std::string targetFrame = fixed_frame_.toStdString();
-    caminfo_tf_filter_->setTargetFrame(targetFrame);
-
-    ImageDisplayBase::fixedFrameChanged();
 }
 
 } // namespace rviz

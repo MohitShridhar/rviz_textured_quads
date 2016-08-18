@@ -65,7 +65,8 @@
 #include <OGRE/OgreRenderTargetListener.h>
 #include <OGRE/OgreRenderQueueListener.h>
 
-#include <rviz_plugin_image_mesh/RvizDisplayImages.h>
+#include <rviz_plugin_image_mesh/TexturedQuad.h>
+#include <rviz_plugin_image_mesh/TexturedQuadArray.h>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -102,7 +103,7 @@ namespace rviz
  * \class MeshDisplayCustom
  * \brief Uses a pose from topic + offset to render a bounding object with shape, size and color
  */
-class MeshDisplayCustom: public rviz::ImageDisplayBase,  public Ogre::RenderTargetListener, public Ogre::RenderQueueListener
+class MeshDisplayCustom: public rviz::Display,  public Ogre::RenderTargetListener, public Ogre::RenderQueueListener
 {
 Q_OBJECT
 public:
@@ -113,17 +114,12 @@ public:
   virtual void onInitialize();
   virtual void update( float wall_dt, float ros_dt );
   virtual void reset();
-  virtual void fixedFrameChanged();
 
 private Q_SLOTS:
   void updateMeshProperties();
-  void updateTopic();
   void updateDisplayImages();
-  void updateName();
-  virtual void updateQueueSize();
 
 protected:
-  void setPose();
   virtual void load();
 
   // overrides from Display
@@ -131,7 +127,6 @@ protected:
   virtual void onDisable();
 
   // This is called by incomingMessage().
-  virtual void processMessage(const sensor_msgs::Image::ConstPtr& msg);
   void processImage(const sensor_msgs::Image& msg);
 
   virtual void subscribe();
@@ -139,27 +134,21 @@ protected:
 
 private:
   void clear();
-  void updateStatus();
   bool updateCamera(bool update_image);
-  void caminfoCallback( const sensor_msgs::CameraInfo::ConstPtr& msg );
 
   void createProjector();
   void addDecalToMaterial(const Ogre::String& matName);
-  void updateMesh( const shape_msgs::Mesh::ConstPtr& mesh );
-  void updateImageMeshes( const rviz_plugin_image_mesh::RvizDisplayImages::ConstPtr& images );
-  void constructQuads( const rviz_plugin_image_mesh::RvizDisplayImages::ConstPtr& images );
+  void updateImageMeshes( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images );
+  
+  void constructQuads( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images );
   shape_msgs::Mesh constructMesh( geometry_msgs::Pose mesh_origin, float width, float height );
 
   float time_since_last_transform_;
 
-  RosTopicProperty* mesh_topic_property_;
   RosTopicProperty* display_images_topic_property_;
   FloatProperty* mesh_alpha_property_;
   FloatProperty* image_alpha_property_;
   ColorProperty* mesh_color_property_;
-  VectorProperty* position_property_;
-  StringProperty* type_property_;
-  QuaternionProperty* rotation_property_;
 
   geometry_msgs::Pose pose_;
   shape_msgs::Mesh last_mesh_;
@@ -169,15 +158,7 @@ private:
 
   ros::NodeHandle nh_;
 
-  //This deals with the camera info
-  message_filters::Subscriber<sensor_msgs::CameraInfo> caminfo_sub_;
-  tf::MessageFilter<sensor_msgs::CameraInfo>* caminfo_tf_filter_;
-
-  sensor_msgs::CameraInfo::ConstPtr current_caminfo_;
-  boost::mutex caminfo_mutex_;
-
   // hold the last information received
-  sensor_msgs::CameraInfo::ConstPtr last_info_;
   sensor_msgs::Image::ConstPtr last_image_;
   float hfov_, vfov_;
 
