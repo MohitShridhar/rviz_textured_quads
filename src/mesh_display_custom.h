@@ -67,6 +67,13 @@
 
 #include <rviz_plugin_image_mesh/RvizDisplayImages.h>
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
+#include <tf/tf.h>
+#include <tf_conversions/tf_eigen.h>
+#include <eigen_conversions/eigen_msg.h>
+
 #include <map>
 
 namespace Ogre
@@ -140,6 +147,8 @@ private:
   void addDecalToMaterial(const Ogre::String& matName);
   void updateMesh( const shape_msgs::Mesh::ConstPtr& mesh );
   void updateImageMeshes( const rviz_plugin_image_mesh::RvizDisplayImages::ConstPtr& images );
+  void constructQuads( const rviz_plugin_image_mesh::RvizDisplayImages::ConstPtr& images );
+  shape_msgs::Mesh constructMesh( geometry_msgs::Pose mesh_origin, float width, float height );
 
   float time_since_last_transform_;
 
@@ -154,6 +163,9 @@ private:
 
   geometry_msgs::Pose pose_;
   shape_msgs::Mesh last_mesh_;
+
+  geometry_msgs::Pose mesh_pose_;
+  int img_width_, img_height_;
 
   ros::NodeHandle nh_;
 

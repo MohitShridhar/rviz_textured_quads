@@ -28,7 +28,7 @@
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * LIABLE FOR ANY DImesh, INDImesh, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
  * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
@@ -210,13 +210,131 @@ void MeshDisplayCustom::setPose()
 
 void MeshDisplayCustom::updateMesh( const shape_msgs::Mesh::ConstPtr& mesh )
 {
+    // boost::mutex::scoped_lock lock( mesh_mutex_ );
+
+    // // create our scenenode and material
+    // load();
+
+    // // set properties
+    // setPose();
+
+    // if (!manual_object_)
+    // {
+    //     static uint32_t count = 0;
+    //     std::stringstream ss;
+    //     ss << "MeshObject" << count++;
+    //     manual_object_ = context_->getSceneManager()->createManualObject(ss.str());
+    //     mesh_node_->attachObject(manual_object_);
+    // }
+
+    // // If we have the same number of tris as previously, just update the object
+    // if (last_mesh_.vertices.size() > 0 && mesh.vertices.size()*2 == last_mesh_.vertices.size())
+    // {
+    //     manual_object_->beginUpdate(0);
+    // }
+    // else // Otherwise clear it and begin anew
+    // {
+    //     manual_object_->clear();
+    //     manual_object_->estimateVertexCount(mesh.vertices.size()*2);
+    //     manual_object_->begin(mesh_material_->getName(), Ogre::RenderOperation::OT_TRIANGLE_LIST);
+    // }
+
+    // const std::vector<geometry_msgs::Point>& points = mesh.vertices;
+    // for(size_t i = 0; i < mesh.triangles.size(); i++)
+    // {
+    //     // make sure we have front-face/back-face triangles
+    //     for(int side = 0; side < 2; side++)
+    //     {
+    //         std::vector<Ogre::Vector3> corners(3);
+    //         for(size_t c = 0; c < 3; c++)
+    //         {
+    //             size_t corner = side ? 2-c : c; // order of corners if side == 1
+    //             corners[corner] = Ogre::Vector3(points[mesh.triangles[i].vertex_indices[corner]].x, points[mesh.triangles[i].vertex_indices[corner]].y, points[mesh.triangles[i].vertex_indices[corner]].z);
+    //         }
+    //         Ogre::Vector3 normal = (corners[1] - corners[0]).crossProduct(corners[2] - corners[0]);
+    //         normal.normalise();
+
+    //         for(size_t c = 0; c < 3; c++)
+    //         {
+    //             manual_object_->position(corners[c]);
+    //             manual_object_->normal(normal);
+    //         }
+    //     }
+    // }
+
+    // manual_object_->end();
+
+    // mesh_material_->setCullingMode(Ogre::CULL_NONE);
+
+    // last_mesh_ = *mesh;
+}
+
+shape_msgs::Mesh MeshDisplayCustom::constructMesh( geometry_msgs::Pose mesh_origin, float width, float height )
+{
+    shape_msgs::Mesh mesh;
+
+    Eigen::Affine3d trans_mat;
+    tf::poseMsgToEigen(mesh_origin, trans_mat);
+
+    // Rviz Coordinate System: x-right, y-forward, z-down
+    // create mesh vertices and tranform them to the specified pose
+
+    Eigen::Vector4d top_left(-width/2.0f, 0.0f, -height/2.0f, 1.0f);
+    Eigen::Vector4d top_right(width/2.0f, 0.0f, -height/2.0f, 1.0f);
+    Eigen::Vector4d bottom_left(-width/2.0f, 0.0f, height/2.0f, 1.0f);
+    Eigen::Vector4d bottom_right(width/2.0f, 0.0f, height/2.0f, 1.0f);
+
+    Eigen::Vector4d trans_top_left = trans_mat.matrix() * top_left;
+    Eigen::Vector4d trans_top_right = trans_mat.matrix() * top_right;
+    Eigen::Vector4d trans_bottom_left = trans_mat.matrix() * bottom_left;
+    Eigen::Vector4d trans_bottom_right = trans_mat.matrix() * bottom_right;
+
+    std::vector<geometry_msgs::Point> vertices(4);
+    vertices.at(0).x = trans_top_left[0]; 
+    vertices.at(0).y = trans_top_left[1];  
+    vertices.at(0).z = trans_top_left[2];  
+    vertices.at(1).x = trans_top_right[0];
+    vertices.at(1).y = trans_top_right[1];
+    vertices.at(1).z = trans_top_right[2];
+    vertices.at(2).x = trans_bottom_left[0];
+    vertices.at(2).y = trans_bottom_left[1];
+    vertices.at(2).z = trans_bottom_left[2];
+    vertices.at(3).x = trans_bottom_right[0];
+    vertices.at(3).y = trans_bottom_right[1];
+    vertices.at(3).z = trans_bottom_right[2];
+    mesh.vertices = vertices;
+
+    std::vector<shape_msgs::MeshTriangle> triangles(2);
+    triangles.at(0).vertex_indices[0] = 0;
+    triangles.at(0).vertex_indices[1] = 1; 
+    triangles.at(0).vertex_indices[2] = 2; 
+    triangles.at(1).vertex_indices[0] = 1;
+    triangles.at(1).vertex_indices[1] = 2; 
+    triangles.at(1).vertex_indices[2] = 3; 
+    mesh.triangles = triangles;
+
+    return mesh;
+}
+
+void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::RvizDisplayImages::ConstPtr& images )
+{
+    geometry_msgs::Pose mesh_origin = images->poses[0];
+    float width = images->scales[0];
+    float height = images->scales[1];
+
+    shape_msgs::Mesh mesh = constructMesh(mesh_origin, width, height);
+
     boost::mutex::scoped_lock lock( mesh_mutex_ );
 
     // create our scenenode and material
     load();
 
     // set properties
-    setPose();
+    // setPose();
+    mesh_pose_ = mesh_origin;
+
+    img_width_ = images->images[0].width;
+    img_height_ = images->images[0].height;
 
     if (!manual_object_)
     {
@@ -228,19 +346,19 @@ void MeshDisplayCustom::updateMesh( const shape_msgs::Mesh::ConstPtr& mesh )
     }
 
     // If we have the same number of tris as previously, just update the object
-    if (last_mesh_.vertices.size() > 0 && mesh->vertices.size()*2 == last_mesh_.vertices.size())
+    if (last_mesh_.vertices.size() > 0 && mesh.vertices.size()*2 == last_mesh_.vertices.size())
     {
         manual_object_->beginUpdate(0);
     }
     else // Otherwise clear it and begin anew
     {
         manual_object_->clear();
-        manual_object_->estimateVertexCount(mesh->vertices.size()*2);
+        manual_object_->estimateVertexCount(mesh.vertices.size()*2);
         manual_object_->begin(mesh_material_->getName(), Ogre::RenderOperation::OT_TRIANGLE_LIST);
     }
 
-    const std::vector<geometry_msgs::Point>& points = mesh->vertices;
-    for(size_t i = 0; i < mesh->triangles.size(); i++)
+    const std::vector<geometry_msgs::Point>& points = mesh.vertices;
+    for(size_t i = 0; i < mesh.triangles.size(); i++)
     {
         // make sure we have front-face/back-face triangles
         for(int side = 0; side < 2; side++)
@@ -249,7 +367,7 @@ void MeshDisplayCustom::updateMesh( const shape_msgs::Mesh::ConstPtr& mesh )
             for(size_t c = 0; c < 3; c++)
             {
                 size_t corner = side ? 2-c : c; // order of corners if side == 1
-                corners[corner] = Ogre::Vector3(points[mesh->triangles[i].vertex_indices[corner]].x, points[mesh->triangles[i].vertex_indices[corner]].y, points[mesh->triangles[i].vertex_indices[corner]].z);
+                corners[corner] = Ogre::Vector3(points[mesh.triangles[i].vertex_indices[corner]].x, points[mesh.triangles[i].vertex_indices[corner]].y, points[mesh.triangles[i].vertex_indices[corner]].z);
             }
             Ogre::Vector3 normal = (corners[1] - corners[0]).crossProduct(corners[2] - corners[0]);
             normal.normalise();
@@ -266,13 +384,14 @@ void MeshDisplayCustom::updateMesh( const shape_msgs::Mesh::ConstPtr& mesh )
 
     mesh_material_->setCullingMode(Ogre::CULL_NONE);
 
-    last_mesh_ = *mesh;
+    last_mesh_ = mesh;
 }
 
 void MeshDisplayCustom::updateImageMeshes( const rviz_plugin_image_mesh::RvizDisplayImages::ConstPtr& images )
 {
     // TEST:
     processImage(images->images[0]);
+    constructQuads(images);
 }
 
 void MeshDisplayCustom::updateMeshProperties()
@@ -484,7 +603,7 @@ bool MeshDisplayCustom::updateCamera(bool update_image)
         last_info_ = current_caminfo_;
         last_image_ = texture_.getImage();
     }
-    if(!last_info_ || !last_image_)
+    if(!img_height_ || !img_width_ || !last_image_)
     {        
         return false;
     }
@@ -497,25 +616,37 @@ bool MeshDisplayCustom::updateCamera(bool update_image)
 
     boost::mutex::scoped_lock lock( mesh_mutex_ );
 
+    float img_width  = img_width_;//image->width*full_image_binning_;
+    float img_height = img_height_;//image->height*full_image_binning_;
+
     Ogre::Vector3 position;
     Ogre::Quaternion orientation;
 
     context_->getFrameManager()->getTransform( last_image_->header.frame_id, last_image_->header.stamp, position, orientation );
 
-    position = Ogre::Vector3(0.5f, -0.5f, 1.0f/590.0f);
-    orientation = Ogre::Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
+    Eigen::Affine3d trans_mat;
+    tf::poseMsgToEigen(mesh_pose_, trans_mat);
 
+    // Rotate by 90 deg to get xz plane
+    trans_mat = trans_mat * Eigen::Quaterniond(0.70710678, -0.70710678f, 0.0f, 0.0f);
+
+    float z_offset = (img_width > img_height) ? img_width : img_height;
+    Eigen::Vector4d projector_origin(0.0f, 0.0f, 1.0f / z_offset, 1.0f);
+    Eigen::Vector4d projector_point = trans_mat.matrix() * projector_origin;
+
+    position = Ogre::Vector3(projector_point[0], projector_point[1], projector_point[2] );
+    orientation = Ogre::Quaternion(mesh_pose_.orientation.w, mesh_pose_.orientation.x, mesh_pose_.orientation.y, mesh_pose_.orientation.z);
+
+    // Update orientation with 90 deg offset
+    orientation = orientation * Ogre::Quaternion( Ogre::Degree( -90 ), Ogre::Vector3::UNIT_X );
 
     // convert vision (Z-forward) frame to ogre frame (Z-out)
     orientation = orientation * Ogre::Quaternion( Ogre::Degree( 180 ), Ogre::Vector3::UNIT_Z );
 
+
     // std::cout << "CameraInfo dimensions: " << last_info_->width << " x " << last_info_->height << std::endl;
     // std::cout << "Texture dimensions: " << last_image_->width << " x " << last_image_->height << std::endl;
     //std::cout << "Original image dimensions: " << last_image_->width*full_image_binning_ << " x " << last_image_->height*full_image_binning_ << std::endl;
-
-
-    float img_width  = last_info_->width;//image->width*full_image_binning_;
-    float img_height = last_info_->height;//image->height*full_image_binning_;
 
     // If the image width/height is 0 due to a malformed caminfo, try to grab the width from the image.
     if( img_width <= 0 )
@@ -540,67 +671,67 @@ bool MeshDisplayCustom::updateCamera(bool update_image)
         return false;
     }
 
+    // projection matrix
+    float P[12] = {1.0, 0.0, img_width / 2.0f, 0.0, 
+                   0.0, 1.0, img_height / 2.0f, 0.0, 
+                   0.0, 0.0, 1.0, 0.0 };
+
     // calculate projection matrix
-    if(last_info_->P[0] != 0)
+    double fx = P[0];
+    double fy = P[5];
+
+    // Add the camera's translation relative to the left camera (from P[3]);
+    double tx = -1 * (P[3] / fx);
+    Ogre::Vector3 right = orientation * Ogre::Vector3::UNIT_X;
+    position = position + (right * tx);
+
+    double ty = -1 * (P[7] / fy);
+    Ogre::Vector3 down = orientation * Ogre::Vector3::UNIT_Y;
+    position = position + (down * ty);
+
+    if( !validateFloats( position ))
     {
-        double fx = last_info_->P[0];
-        double fy = last_info_->P[5];
-
-        // Add the camera's translation relative to the left camera (from P[3]);
-        double tx = -1 * (last_info_->P[3] / fx);
-        Ogre::Vector3 right = orientation * Ogre::Vector3::UNIT_X;
-        position = position + (right * tx);
-
-        double ty = -1 * (last_info_->P[7] / fy);
-        Ogre::Vector3 down = orientation * Ogre::Vector3::UNIT_Y;
-        position = position + (down * ty);
-
-        if( !validateFloats( position ))
-        {
-            ROS_ERROR( "position error");
-            setStatus( StatusProperty::Error, "Camera Info", "CameraInfo/P resulted in an invalid position calculation (nans or infs)" );
-            return false;
-        }
-
-        if(projector_node_ != NULL)
-        {
-            projector_node_->setPosition( position );
-            projector_node_->setOrientation( orientation );
-
-            // std::cout << position << std::endl;
-            // std::cout << orientation << std::endl;
-        }
-
-        // calculate the projection matrix
-        double cx = last_info_->P[2];
-        double cy = last_info_->P[6];
-
-        double far_plane = 100;
-        double near_plane = 0.01;
-
-        Ogre::Matrix4 proj_matrix;
-        proj_matrix = Ogre::Matrix4::ZERO;
-
-        proj_matrix[0][0]= 2.0 * fx/img_width;
-        proj_matrix[1][1]= 2.0 * fy/img_height;
-
-        proj_matrix[0][2]= 2.0 * (0.5 - cx/img_width);
-        proj_matrix[1][2]= 2.0 * (cy/img_height - 0.5);
-
-        proj_matrix[2][2]= -(far_plane+near_plane) / (far_plane-near_plane);
-        proj_matrix[2][3]= -2.0*far_plane*near_plane / (far_plane-near_plane);
-
-        proj_matrix[3][2]= -1;
-
-        hfov_ = atan( 1.0f / proj_matrix[0][0] ) * 2.0f * 57.2957795f;
-        vfov_ = atan( 1.0f / proj_matrix[1][1] ) * 2.0f * 57.2957795f;
-
-        if(decal_frustum_ != NULL)
-            decal_frustum_->setCustomProjectionMatrix(true, proj_matrix);
-
-        // ROS_INFO(" Camera (%f, %f)", proj_matrix[0][0], proj_matrix[1][1]);
-        // ROS_INFO(" Render Panel: %x   Viewport: %x", render_panel_, render_panel_->getViewport());
+        ROS_ERROR( "position error");
+        setStatus( StatusProperty::Error, "Camera Info", "CameraInfo/P resulted in an invalid position calculation (nans or infs)" );
+        return false;
     }
+
+    if(projector_node_ != NULL)
+    {
+        projector_node_->setPosition( position );
+        projector_node_->setOrientation( orientation );
+    }
+
+    // calculate the projection matrix
+    double cx = P[2];
+    double cy = P[6];
+
+    double far_plane = 100;
+    double near_plane = 0.01;
+
+    Ogre::Matrix4 proj_matrix;
+    proj_matrix = Ogre::Matrix4::ZERO;
+
+    proj_matrix[0][0]= 2.0 * fx/img_width;
+    proj_matrix[1][1]= 2.0 * fy/img_height;
+
+    proj_matrix[0][2]= 2.0 * (0.5 - cx/img_width);
+    proj_matrix[1][2]= 2.0 * (cy/img_height - 0.5);
+
+    proj_matrix[2][2]= -(far_plane+near_plane) / (far_plane-near_plane);
+    proj_matrix[2][3]= -2.0*far_plane*near_plane / (far_plane-near_plane);
+
+    proj_matrix[3][2]= -1;
+
+    hfov_ = atan( 1.0f / proj_matrix[0][0] ) * 2.0f * 57.2957795f;
+    vfov_ = atan( 1.0f / proj_matrix[1][1] ) * 2.0f * 57.2957795f;
+
+    if(decal_frustum_ != NULL)
+        decal_frustum_->setCustomProjectionMatrix(true, proj_matrix);
+
+    // ROS_INFO(" Camera (%f, %f)", proj_matrix[0][0], proj_matrix[1][1]);
+    // ROS_INFO(" Render Panel: %x   Viewport: %x", render_panel_, render_panel_->getViewport());
+
 
     setStatus( StatusProperty::Ok, "Time", "ok" );
     setStatus( StatusProperty::Ok, "Camera Info", "ok" );

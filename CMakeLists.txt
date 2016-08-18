@@ -3,7 +3,8 @@ project(rviz_plugin_image_mesh)
 
 ## Find catkin and any catkin packages on which
 ## this package depends at build time
-find_package(catkin REQUIRED COMPONENTS roscpp rospy roslib std_msgs sensor_msgs shape_msgs rviz pluginlib class_loader cv_bridge message_generation geometry_msgs sensor_msgs)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy roslib std_msgs sensor_msgs shape_msgs rviz pluginlib class_loader cv_bridge message_generation geometry_msgs sensor_msgs cmake_modules eigen_conversions)
+find_package(Eigen REQUIRED)
 
 ## This plugin includes Qt widgets, so we must include Qt like so:
 find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
@@ -50,12 +51,14 @@ catkin_package(
     cv_bridge
   	geometry_msgs
   	sensor_msgs
+  	eigen_conversions
 )
 
 
 include_directories(
 	src
-	${catkin_INCLUDE_DIRS})
+	${catkin_INCLUDE_DIRS}
+	${Eigen_INCLUDE_DIRS})
 
 include_directories(SYSTEM
                     ${OPENGL_INCLUDE_DIR}
@@ -72,7 +75,7 @@ include_directories(${catkin_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 set(VIGIR_MESH_LIB_NAME rviz_plugin_mesh_display_custom)
 
 add_library(${VIGIR_MESH_LIB_NAME}_core src/mesh_display_custom.cpp ${MOC_SOURCES})
-target_link_libraries(${VIGIR_MESH_LIB_NAME}_core ${catkin_LIBRARIES} ${QT_LIBRARIES})
+target_link_libraries(${VIGIR_MESH_LIB_NAME}_core ${catkin_LIBRARIES} ${QT_LIBRARIES} ${Eigen_LIBRARIES})
 
 add_dependencies(${VIGIR_MESH_LIB_NAME}_core ${catkin_EXPORTED_TARGETS})
 
