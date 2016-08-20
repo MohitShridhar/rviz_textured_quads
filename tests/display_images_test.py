@@ -8,6 +8,8 @@ import copy
 import numpy as np
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
+import tf
+import math
 
 from rviz_plugin_image_mesh.msg import TexturedQuad, TexturedQuadArray
 
@@ -22,6 +24,8 @@ def pub_image():
 
     img2 = cv2.imread('./textures/Decal.png',cv2.IMREAD_COLOR)
     img_msg2 = CvBridge().cv2_to_imgmsg(img2, "bgr8")
+
+    cap = cv2.VideoCapture('/home/mohitshridhar/Downloads/ICRA_2010.mov')
 
     display_image = TexturedQuad()
     
@@ -54,7 +58,7 @@ def pub_image():
     second_image.image = img_msg2
     second_image.width = 1.0
     second_image.height = 1.0
-    second_image.pose.position.x = 0.2
+    second_image.pose.position.x = 1.2
     second_image.pose.position.y = -0.3
     second_image.pose.position.z = 2.0
 
@@ -64,12 +68,40 @@ def pub_image():
     second_image.pose.orientation.w = 0.70710678
 
     display_images = TexturedQuadArray()
-    display_images = np.array([display_image])
+    display_images = np.array([second_image, display_image])
 
-    rate = rospy.Rate(10) # 10hz
+    rate = rospy.Rate(30) # 10hz
+    deg_increment = 0.005
+    angle = 0
+    count = 0
+
     while not rospy.is_shutdown():
+        if (cap.isOpened()):
+            ret, frame = cap.read()
+
+            display_image.image = CvBridge().cv2_to_imgmsg(frame, "bgr8")
+
+        angle += deg_increment
+
+        q = tf.transformations.quaternion_from_euler(angle + deg_increment, 0., 0.);
+        second_image.pose.orientation.x = q[0]
+        second_image.pose.orientation.y = q[1]
+        second_image.pose.orientation.z = q[2]
+        second_image.pose.orientation.w = q[3]
+
+        q = tf.transformations.quaternion_from_euler(0., angle + deg_increment, 0.);
+        display_image.pose.orientation.x = q[0]
+        display_image.pose.orientation.y = q[1]
+        display_image.pose.orientation.z = q[2]
+        display_image.pose.orientation.w = q[3]
+
+
+        count = count + 1
+
         image_pub.publish(display_images)
         rate.sleep()
+
+    cap.release()
 
 if __name__ == '__main__':
 

@@ -127,6 +127,13 @@ MeshDisplayCustom::~MeshDisplayCustom()
     } 
     textures_.clear();
 
+    // clear textures
+    for (std::vector<Ogre::SceneNode*>::iterator it = mesh_nodes_.begin() ; it != mesh_nodes_.end(); ++it)
+    {
+      delete (*it);
+    } 
+    mesh_nodes_.clear();
+
     // TODO: clean up other things
 }
 
@@ -240,8 +247,13 @@ shape_msgs::Mesh MeshDisplayCustom::constructMesh( geometry_msgs::Pose mesh_orig
 
 void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images )
 {
+    for (int q=0; q<manual_objects_.size(); q++)
+    {
+        manual_objects_[q]->clear();
+    }
+
     int num_quads = images->quads.size();
-    
+
     // resize state vectors   
     mesh_poses_.resize(num_quads);
     img_widths_.resize(num_quads);
