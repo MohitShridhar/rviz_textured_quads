@@ -82,9 +82,6 @@ bool validateFloats(const sensor_msgs::CameraInfo& msg)
 MeshDisplayCustom::MeshDisplayCustom()
     : Display()
     , time_since_last_transform_( 0.0f )
-    // , mesh_nodes_[index](NULL)
-    // , projector_node_(NULL)
-    // , decal_frustum_(NULL)
     , initialized_(false)
 {
     image_alpha_property_ = new FloatProperty( "Image Alpha", 1.0f,
@@ -198,7 +195,7 @@ void MeshDisplayCustom::addDecalToMaterial(int index, const Ogre::String& matNam
     }
 }
 
-shape_msgs::Mesh MeshDisplayCustom::constructMesh( geometry_msgs::Pose mesh_origin, float width, float height )
+shape_msgs::Mesh MeshDisplayCustom::constructMesh( geometry_msgs::Pose mesh_origin, float width, float height, float border_size )
 {
     shape_msgs::Mesh mesh;
 
@@ -208,10 +205,10 @@ shape_msgs::Mesh MeshDisplayCustom::constructMesh( geometry_msgs::Pose mesh_orig
     // Rviz Coordinate System: x-right, y-forward, z-down
     // create mesh vertices and tranform them to the specified pose
 
-    Eigen::Vector4d top_left(-width/2.0f, 0.0f, -height/2.0f, 1.0f);
-    Eigen::Vector4d top_right(width/2.0f, 0.0f, -height/2.0f, 1.0f);
-    Eigen::Vector4d bottom_left(-width/2.0f, 0.0f, height/2.0f, 1.0f);
-    Eigen::Vector4d bottom_right(width/2.0f, 0.0f, height/2.0f, 1.0f);
+    Eigen::Vector4d top_left(-width/2.0f - border_size, 0.0f, -height/2.0f - border_size, 1.0f);
+    Eigen::Vector4d top_right(width/2.0f + border_size, 0.0f, -height/2.0f - border_size, 1.0f);
+    Eigen::Vector4d bottom_left(-width/2.0f - border_size, 0.0f, height/2.0f + border_size, 1.0f);
+    Eigen::Vector4d bottom_right(width/2.0f + border_size, 0.0f, height/2.0f + border_size, 1.0f);
 
     Eigen::Vector4d trans_top_left = trans_mat.matrix() * top_left;
     Eigen::Vector4d trans_top_right = trans_mat.matrix() * top_right;
@@ -270,6 +267,9 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
     mesh_materials_.resize(num_quads);
     mesh_nodes_.resize(num_quads);
 
+    border_colors_.resize(num_quads);
+    border_sizes_.resize(num_quads);
+
     for (int q=0; q<num_quads; q++)
     {
         processImage(q, images->quads[q].image);
@@ -278,17 +278,45 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
         float width = images->quads[q].width;
         float height = images->quads[q].height;
 
-        shape_msgs::Mesh mesh = constructMesh(mesh_origin, width, height);
+        // set properties
+        mesh_poses_[q] = mesh_origin;
+        img_widths_[q] = images->quads[q].image.width;
+        img_heights_[q] = images->quads[q].image.height;
+
+        border_colors_[q].resize(4);
+
+        if (images->quads[q].border_color.size() == 4) 
+        {
+            border_colors_[q][0] = images->quads[q].border_color[0];
+            border_colors_[q][1] = images->quads[q].border_color[1];
+            border_colors_[q][2] = images->quads[q].border_color[2];
+            border_colors_[q][3] = images->quads[q].border_color[3];
+        }
+        else
+        {
+            // default white border
+            border_colors_[q][0] = 255.0f;
+            border_colors_[q][1] = 255.0f;
+            border_colors_[q][2] = 255.0f;
+            border_colors_[q][3] = 255.0f;
+        }
+
+        if (images->quads[q].border_size >= 0.0f)
+        {
+            border_sizes_[q] = images->quads[q].border_size;
+        }
+        else
+        {
+            // default border size (no border)
+            border_sizes_[q] = 0.0f;
+        }
+
+        shape_msgs::Mesh mesh = constructMesh(mesh_origin, width, height, border_sizes_[q]);
 
         boost::mutex::scoped_lock lock( mesh_mutex_ );
 
         // create our scenenode and material
         load(q);
-
-        // set properties
-        mesh_poses_[q] = mesh_origin;
-        img_widths_[q] = images->quads[q].image.width;
-        img_heights_[q] = images->quads[q].image.height;
 
         if (!manual_objects_[q])
         {
@@ -345,6 +373,7 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
 void MeshDisplayCustom::updateImageMeshes( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images )
 {
     constructQuads(images);
+    updateMeshProperties();
 }
 
 void MeshDisplayCustom::updateMeshProperties()
@@ -355,16 +384,16 @@ void MeshDisplayCustom::updateMeshProperties()
         Ogre::Technique* technique = mesh_materials_[i]->getTechnique(0);
         Ogre::Pass* pass = technique->getPass(0);
 
-        Ogre::ColourValue self_illumination_color(0.0f, 0.0f, 0.0f, mesh_alpha_property_->getFloat());
+        Ogre::ColourValue self_illumination_color(0.0f, 0.0f, 0.0f, 0.0f);// border_colors_[i][3]);
         pass->setSelfIllumination(self_illumination_color);
 
-        Ogre::ColourValue diffuse_color(mesh_color_property_->getColor().redF(), mesh_color_property_->getColor().greenF(), mesh_color_property_->getColor().blueF(), mesh_alpha_property_->getFloat());
+        Ogre::ColourValue diffuse_color(0.0f, 0.0f, 0.0f, 1.0f/*border_colors_[i][0], border_colors_[i][1], border_colors_[i][2], border_colors_[i][3]*/);
         pass->setDiffuse(diffuse_color);
 
-        Ogre::ColourValue ambient_color(mesh_color_property_->getColor().redF()/2.0f, mesh_color_property_->getColor().greenF()/2.0f, mesh_color_property_->getColor().blueF()/2.0f, mesh_alpha_property_->getFloat());
+        Ogre::ColourValue ambient_color(border_colors_[i][0], border_colors_[i][1], border_colors_[i][2], border_colors_[i][3]);
         pass->setAmbient(ambient_color);
 
-        Ogre::ColourValue specular_color(1.0f, 1.0f, 1.0f, 1.0f);
+        Ogre::ColourValue specular_color(0.0f, 0.0f, 0.0f, 1.0f);
         pass->setSpecular(specular_color);
 
         Ogre::Real shininess = 64.0f;
@@ -433,13 +462,13 @@ void MeshDisplayCustom::load(int index)
         Ogre::Technique* technique = mesh_materials_[index]->getTechnique(0);
         Ogre::Pass* pass = technique->getPass(0);
 
-        Ogre::ColourValue self_illumnation_color(0.0f, 0.0f, 0.0f, mesh_alpha_property_->getFloat());
+        Ogre::ColourValue self_illumnation_color(0.0f, 0.0f, 0.0f, border_colors_[index][3]);
         pass->setSelfIllumination(self_illumnation_color);
 
-        Ogre::ColourValue diffuse_color(mesh_color_property_->getColor().redF(), mesh_color_property_->getColor().greenF(), mesh_color_property_->getColor().blueF(), mesh_alpha_property_->getFloat());
+        Ogre::ColourValue diffuse_color(border_colors_[index][0], border_colors_[index][1], border_colors_[index][2], border_colors_[index][3]);
         pass->setDiffuse(diffuse_color);
 
-        Ogre::ColourValue ambient_color(mesh_color_property_->getColor().redF()/2.0f, mesh_color_property_->getColor().greenF()/2.0f, mesh_color_property_->getColor().blueF()/2.0f, mesh_alpha_property_->getFloat());
+        Ogre::ColourValue ambient_color(border_colors_[index][0], border_colors_[index][1], border_colors_[index][2], border_colors_[index][3]);
         pass->setAmbient(ambient_color);
 
         Ogre::ColourValue specular_color(1.0f, 1.0f, 1.0f, 1.0f);

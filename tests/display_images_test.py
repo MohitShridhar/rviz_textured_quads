@@ -53,6 +53,9 @@ def pub_image():
     display_image.pose = pose
     display_image.width = 1.0  
     display_image.height = (1.0 * img_msg.height)/img_msg.width
+    display_image.border_color = [1., 0., 0., 0.5]
+    display_image.border_size = 0.05
+
 
     second_image = copy.deepcopy(display_image)
     second_image.image = img_msg2
@@ -66,9 +69,11 @@ def pub_image():
     second_image.pose.orientation.y = 0.70710678
     second_image.pose.orientation.z = 0.0
     second_image.pose.orientation.w = 0.70710678
+    second_image.border_color = [0.5, 1.0, 0.0, 0.5]
+    second_image.border_size = 0.1
 
     display_images = TexturedQuadArray()
-    display_images = np.array([second_image, display_image])
+    display_images = np.array([display_image, second_image])
 
     rate = rospy.Rate(30) # 10hz
     deg_increment = 0.005

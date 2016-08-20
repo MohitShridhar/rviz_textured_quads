@@ -142,7 +142,7 @@ private:
   void updateImageMeshes( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images );
   
   void constructQuads( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images );
-  shape_msgs::Mesh constructMesh( geometry_msgs::Pose mesh_origin, float width, float height );
+  shape_msgs::Mesh constructMesh( geometry_msgs::Pose mesh_origin, float width, float height, float border_size );
 
   float time_since_last_transform_;
 
@@ -154,6 +154,8 @@ private:
   std::vector<shape_msgs::Mesh> last_meshes_;
   std::vector<geometry_msgs::Pose> mesh_poses_;
   std::vector<int> img_widths_, img_heights_;
+  std::vector<std::vector<float> > border_colors_;
+  std::vector<float> border_sizes_;
 
   ros::NodeHandle nh_;
 
