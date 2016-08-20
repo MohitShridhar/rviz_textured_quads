@@ -103,6 +103,8 @@ MeshDisplayCustom::~MeshDisplayCustom()
 {
     unsubscribe();
 
+    // TODO: Why am I doing this? switch to shared ptrs Argh!!!!!! 
+
     // clear manual objects
     for (std::vector<Ogre::ManualObject*>::iterator it = manual_objects_.begin() ; it != manual_objects_.end(); ++it)
     {
@@ -130,6 +132,13 @@ MeshDisplayCustom::~MeshDisplayCustom()
       delete (*it);
     } 
     mesh_nodes_.clear();
+
+    // clear text nodes
+    for (std::vector<rviz_plugin_image_mesh::TextNode*>::iterator it = text_nodes_.begin() ; it != text_nodes_.end(); ++it)
+    {
+      delete (*it);
+    } 
+    text_nodes_.clear();
 
     // TODO: clean up other things
 }
@@ -266,6 +275,7 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
     filter_frustums_.resize(num_quads);
     mesh_materials_.resize(num_quads);
     mesh_nodes_.resize(num_quads);
+    text_nodes_.resize(num_quads);
 
     border_colors_.resize(num_quads);
     border_sizes_.resize(num_quads);
@@ -325,6 +335,9 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
             ss << "MeshObject" << count++ << "Index" << q;
             manual_objects_[q] = context_->getSceneManager()->createManualObject(ss.str());
             mesh_nodes_[q]->attachObject(manual_objects_[q]);
+
+            text_nodes_[q] = new rviz_plugin_image_mesh::TextNode(context_->getSceneManager(), mesh_nodes_[q], Ogre::Vector3(mesh_origin.position.x, mesh_origin.position.y + 0.5f*height + 0.25f, mesh_origin.position.z));
+            text_nodes_[q]->setCaption(images->quads[q].caption);
         }
 
         // If we have the same number of tris as previously, just update the object
@@ -704,6 +717,7 @@ void MeshDisplayCustom::processImage(int index, const sensor_msgs::Image& msg)
     // add completely white transparent border to the image so that it won't replicate colored pixels all over the mesh
     cv::Scalar value(255,255,255,0);
     cv::copyMakeBorder(cv_ptr->image,cv_ptr->image,1,1,1,1,cv::BORDER_CONSTANT,value);
+    cv::flip(cv_ptr->image,cv_ptr->image,1);
 
     // Output modified video stream
     if (textures_[index] == NULL)

@@ -78,6 +78,8 @@
 #include <map>
 #include <vector>
 
+#include "text_node.h"
+
 namespace Ogre
 {
 class Entity;
@@ -156,6 +158,7 @@ private:
   std::vector<int> img_widths_, img_heights_;
   std::vector<std::vector<float> > border_colors_;
   std::vector<float> border_sizes_;
+  std::vector<rviz_plugin_image_mesh::TextNode*> text_nodes_;
 
   ros::NodeHandle nh_;
 
