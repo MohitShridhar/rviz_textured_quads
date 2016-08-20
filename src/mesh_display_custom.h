@@ -76,6 +76,7 @@
 #include <eigen_conversions/eigen_msg.h>
 
 #include <map>
+#include <vector>
 
 namespace Ogre
 {
@@ -120,24 +121,24 @@ private Q_SLOTS:
   void updateDisplayImages();
 
 protected:
-  virtual void load();
+  virtual void load(int index);
 
   // overrides from Display
   virtual void onEnable();
   virtual void onDisable();
 
   // This is called by incomingMessage().
-  void processImage(const sensor_msgs::Image& msg);
+  void processImage(int index, const sensor_msgs::Image& msg);
 
   virtual void subscribe();
   virtual void unsubscribe();
 
 private:
   void clear();
-  bool updateCamera(bool update_image);
+  bool updateCamera(int index, bool update_image);
 
-  void createProjector();
-  void addDecalToMaterial(const Ogre::String& matName);
+  void createProjector(int index);
+  void addDecalToMaterial(int index, const Ogre::String& matName);
   void updateImageMeshes( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images );
   
   void constructQuads( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images );
@@ -150,29 +151,25 @@ private:
   FloatProperty* image_alpha_property_;
   ColorProperty* mesh_color_property_;
 
-  geometry_msgs::Pose pose_;
-  shape_msgs::Mesh last_mesh_;
-
-  geometry_msgs::Pose mesh_pose_;
-  int img_width_, img_height_;
+  std::vector<shape_msgs::Mesh> last_meshes_;
+  std::vector<geometry_msgs::Pose> mesh_poses_;
+  std::vector<int> img_widths_, img_heights_;
 
   ros::NodeHandle nh_;
 
-  // hold the last information received
-  sensor_msgs::Image::ConstPtr last_image_;
-  float hfov_, vfov_;
+  std::vector<sensor_msgs::Image::ConstPtr> last_images_;
 
-  Ogre::SceneNode* mesh_node_;
-  Ogre::ManualObject* manual_object_;
-  Ogre::MaterialPtr mesh_material_;
-  ROSImageTexture texture_;
+  std::vector<Ogre::SceneNode*> mesh_nodes_;
+  std::vector<Ogre::ManualObject*> manual_objects_;
+  std::vector<Ogre::MaterialPtr> mesh_materials_;
+  std::vector<ROSImageTexture*> textures_;
 
   ros::Subscriber pose_sub_;
   ros::Subscriber rviz_display_images_sub_;
 
-  Ogre::Frustum* decal_frustum_;
-  std::vector<Ogre::Frustum*> filter_frustum_; //need multiple filters (back, up, down, left, right)
-  Ogre::SceneNode* projector_node_;
+  std::vector<Ogre::Frustum*> decal_frustums_;
+  std::vector<std::vector<Ogre::Frustum*> > filter_frustums_; //need multiple filters (back, up, down, left, right)
+  std::vector<Ogre::SceneNode*> projector_nodes_;
 
   std::vector<RenderPanel*> render_panel_list_;
   RenderPanel* render_panel_; // this is the active render panel
