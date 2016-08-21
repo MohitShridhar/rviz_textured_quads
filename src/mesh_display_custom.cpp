@@ -258,6 +258,11 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
         manual_objects_[q]->clear();
     }
 
+    for (int q=0; q<text_nodes_.size(); q++)
+    {
+        text_nodes_[q]->clear();
+    }
+
     int num_quads = images->quads.size();
 
     // resize state vectors   
@@ -328,6 +333,8 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
         // create our scenenode and material
         load(q);
 
+        Ogre::Vector3 caption_position = Ogre::Vector3(mesh_origin.position.x, mesh_origin.position.y + 0.5f*height + 0.25f, mesh_origin.position.z);
+
         if (!manual_objects_[q])
         {
             static uint32_t count = 0;
@@ -335,9 +342,6 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
             ss << "MeshObject" << count++ << "Index" << q;
             manual_objects_[q] = context_->getSceneManager()->createManualObject(ss.str());
             mesh_nodes_[q]->attachObject(manual_objects_[q]);
-
-            text_nodes_[q] = new rviz_plugin_image_mesh::TextNode(context_->getSceneManager(), mesh_nodes_[q], Ogre::Vector3(mesh_origin.position.x, mesh_origin.position.y + 0.5f*height + 0.25f, mesh_origin.position.z));
-            text_nodes_[q]->setCaption(images->quads[q].caption);
         }
 
         // If we have the same number of tris as previously, just update the object
@@ -380,6 +384,19 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
         mesh_materials_[q]->setCullingMode(Ogre::CULL_NONE);
 
         last_meshes_[q] = mesh;
+
+
+        if (!text_nodes_[q])
+        {
+            text_nodes_[q] = new rviz_plugin_image_mesh::TextNode(context_->getSceneManager(), manual_objects_[q]->getParentSceneNode(), caption_position);
+            text_nodes_[q]->setCaption(images->quads[q].caption);
+        } 
+        else
+        {
+            text_nodes_[q]->setCaption(images->quads[q].caption);
+            text_nodes_[q]->setPosition(caption_position);
+        }
+
     }
 }
 

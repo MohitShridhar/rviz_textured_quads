@@ -62,7 +62,7 @@ def pub_image():
     second_image.image = img_msg2
     second_image.width = 1.0
     second_image.height = 1.0
-    second_image.pose.position.x = 1.2
+    second_image.pose.position.x = 2.2
     second_image.pose.position.y = -0.3
     second_image.pose.position.z = 2.0
 
@@ -89,6 +89,10 @@ def pub_image():
             display_image.image = CvBridge().cv2_to_imgmsg(frame, "bgr8")
 
         angle += deg_increment
+
+        second_image.pose.position.x = 2.0 * math.sin(angle)
+        second_image.pose.position.y = 2.0 * math.cos(angle)
+
 
         q = tf.transformations.quaternion_from_euler(angle + deg_increment, 0., 0.);
         second_image.pose.orientation.x = q[0]

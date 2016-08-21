@@ -55,6 +55,10 @@ namespace rviz_plugin_image_mesh {
             delete m_text;
         };
 
+        void clear() {
+            setVisible(false);
+        }
+
         void setCharacterHeight(double characterHeight) {
             m_text->setCharacterHeight(characterHeight);
             m_text->setSpaceWidth(0.3 * characterHeight);
@@ -66,6 +70,7 @@ namespace rviz_plugin_image_mesh {
 
         void setCaption(const std::string& caption) {
             m_text->setCaption(caption);
+            setVisible(true);
         }
 
         void setPosition(const Ogre::Vector3& position) {
