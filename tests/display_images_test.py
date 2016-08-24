@@ -39,15 +39,15 @@ def pub_image():
     # pose.position.y =  0.0
     # pose.position.z =  0.0
 
-    pose.orientation.x = 0.70710678
-    pose.orientation.y = 0.0
-    pose.orientation.z = 0.0
-    pose.orientation.w = 0.70710678
-
-    # pose.orientation.x = 0.0
+    # pose.orientation.x = 0.70710678
     # pose.orientation.y = 0.0
     # pose.orientation.z = 0.0
-    # pose.orientation.w = 1.0
+    # pose.orientation.w = 0.70710678
+
+    pose.orientation.x = 0.0
+    pose.orientation.y = 0.0
+    pose.orientation.z = 0.0
+    pose.orientation.w = 1.0
 
     display_image.image = img_msg
     display_image.pose = pose
@@ -100,11 +100,11 @@ def pub_image():
         second_image.pose.orientation.z = q[2]
         second_image.pose.orientation.w = q[3]
 
-        q = tf.transformations.quaternion_from_euler(0., angle + deg_increment, 0.);
-        display_image.pose.orientation.x = q[0]
-        display_image.pose.orientation.y = q[1]
-        display_image.pose.orientation.z = q[2]
-        display_image.pose.orientation.w = q[3]
+        # q = tf.transformations.quaternion_from_euler(0., angle + deg_increment, 0.);
+        # display_image.pose.orientation.x = q[0]
+        # display_image.pose.orientation.y = q[1]
+        # display_image.pose.orientation.z = q[2]
+        # display_image.pose.orientation.w = q[3]
 
 
         count = count + 1

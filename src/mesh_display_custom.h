@@ -152,6 +152,9 @@ private:
   FloatProperty* mesh_alpha_property_;
   FloatProperty* image_alpha_property_;
   ColorProperty* mesh_color_property_;
+  VectorProperty* text_offset_property_;
+  ColorProperty* text_color_property_;
+  FloatProperty* text_height_property_;
 
   std::vector<shape_msgs::Mesh> last_meshes_;
   std::vector<geometry_msgs::Pose> mesh_poses_;

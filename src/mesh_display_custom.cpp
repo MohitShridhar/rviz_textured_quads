@@ -97,6 +97,16 @@ MeshDisplayCustom::MeshDisplayCustom()
 
     mesh_color_property_ = new ColorProperty( "Mesh Color", QColor( 255, 255, 255 ),
                                               "Color to mesh when not overlayed by image texture.", this, SLOT( updateMeshProperties() ) );
+
+    text_offset_property_ = new VectorProperty( "Text Offset Position", Ogre::Vector3::ZERO,
+                                             "position of the caption relative to the image",
+                                             this, SLOT( updateMeshProperties() ) );
+
+    text_color_property_ = new ColorProperty (  "Text Color", QColor( 255, 255, 255 ),
+                                              "caption color.", this, SLOT( updateMeshProperties() )  );
+
+    text_height_property_ = new FloatProperty( "Text Height", 0.1f,
+                                              "font size of caption", this, SLOT( updateMeshProperties() ) );
 }
 
 MeshDisplayCustom::~MeshDisplayCustom()
@@ -211,6 +221,8 @@ shape_msgs::Mesh MeshDisplayCustom::constructMesh( geometry_msgs::Pose mesh_orig
     Eigen::Affine3d trans_mat;
     tf::poseMsgToEigen(mesh_origin, trans_mat);
 
+    // trans_mat = trans_mat * Eigen::Quaterniond(0.70710678, -0.70710678f, 0.0f, 0.0f);
+
     // Rviz Coordinate System: x-right, y-forward, z-down
     // create mesh vertices and tranform them to the specified pose
 
@@ -290,6 +302,18 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
         processImage(q, images->quads[q].image);
 
         geometry_msgs::Pose mesh_origin = images->quads[q].pose;
+
+        // Rotate from x-y to x-z plane:
+        Eigen::Affine3d trans_mat;
+        tf::poseMsgToEigen(mesh_origin, trans_mat);
+        trans_mat = trans_mat * Eigen::Quaterniond(0.70710678, -0.70710678f, 0.0f, 0.0f);
+        
+        Eigen::Quaterniond xz_quat(trans_mat.rotation());
+        mesh_origin.orientation.x = xz_quat.x();
+        mesh_origin.orientation.y = xz_quat.y();
+        mesh_origin.orientation.z = xz_quat.z();
+        mesh_origin.orientation.w = xz_quat.w();
+
         float width = images->quads[q].width;
         float height = images->quads[q].height;
 
@@ -734,7 +758,7 @@ void MeshDisplayCustom::processImage(int index, const sensor_msgs::Image& msg)
     // add completely white transparent border to the image so that it won't replicate colored pixels all over the mesh
     cv::Scalar value(255,255,255,0);
     cv::copyMakeBorder(cv_ptr->image,cv_ptr->image,1,1,1,1,cv::BORDER_CONSTANT,value);
-    cv::flip(cv_ptr->image,cv_ptr->image,1);
+    cv::flip(cv_ptr->image,cv_ptr->image,-1);
 
     // Output modified video stream
     if (textures_[index] == NULL)
