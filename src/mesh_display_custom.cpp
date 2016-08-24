@@ -84,29 +84,19 @@ MeshDisplayCustom::MeshDisplayCustom()
     , time_since_last_transform_( 0.0f )
     , initialized_(false)
 {
-    image_alpha_property_ = new FloatProperty( "Image Alpha", 1.0f,
-                                               "Amount of transparency for the mesh with image texture overlay.", this, SLOT( updateMeshProperties() ) );
-
     display_images_topic_property_ = new RosTopicProperty( "Display Images Topic", "",
                                             QString::fromStdString( ros::message_traits::datatype<rviz_plugin_image_mesh::TexturedQuadArray>() ),
                                             "shape_msgs::Mesh topic to subscribe to.",
                                             this, SLOT( updateDisplayImages() ));
-
-    mesh_alpha_property_ = new FloatProperty( "Mesh Alpha", 0.6f,
-                                              "Amount of transparency for the mesh.", this, SLOT( updateMeshProperties() ) );
-
-    mesh_color_property_ = new ColorProperty( "Mesh Color", QColor( 255, 255, 255 ),
-                                              "Color to mesh when not overlayed by image texture.", this, SLOT( updateMeshProperties() ) );
-
-    text_offset_property_ = new VectorProperty( "Text Offset Position", Ogre::Vector3::ZERO,
-                                             "position of the caption relative to the image",
-                                             this, SLOT( updateMeshProperties() ) );
 
     text_color_property_ = new ColorProperty (  "Text Color", QColor( 255, 255, 255 ),
                                               "caption color.", this, SLOT( updateMeshProperties() )  );
 
     text_height_property_ = new FloatProperty( "Text Height", 0.1f,
                                               "font size of caption", this, SLOT( updateMeshProperties() ) );
+
+    text_bottom_offset_ =  new FloatProperty( "Text Bottom Offset", 0.18f,
+                                              "text placement offset below", this, SLOT( updateMeshProperties() ) );
 }
 
 MeshDisplayCustom::~MeshDisplayCustom()
@@ -221,8 +211,6 @@ shape_msgs::Mesh MeshDisplayCustom::constructMesh( geometry_msgs::Pose mesh_orig
     Eigen::Affine3d trans_mat;
     tf::poseMsgToEigen(mesh_origin, trans_mat);
 
-    // trans_mat = trans_mat * Eigen::Quaterniond(0.70710678, -0.70710678f, 0.0f, 0.0f);
-
     // Rviz Coordinate System: x-right, y-forward, z-down
     // create mesh vertices and tranform them to the specified pose
 
@@ -263,7 +251,7 @@ shape_msgs::Mesh MeshDisplayCustom::constructMesh( geometry_msgs::Pose mesh_orig
     return mesh;
 }
 
-void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images )
+void MeshDisplayCustom::clearStates(int num_quads)
 {
     for (int q=0; q<manual_objects_.size(); q++)
     {
@@ -274,8 +262,6 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
     {
         text_nodes_[q]->clear();
     }
-
-    int num_quads = images->quads.size();
 
     // resize state vectors   
     mesh_poses_.resize(num_quads);
@@ -295,7 +281,14 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
     text_nodes_.resize(num_quads);
 
     border_colors_.resize(num_quads);
-    border_sizes_.resize(num_quads);
+    border_sizes_.resize(num_quads);  
+}
+
+void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images )
+{
+    int num_quads = images->quads.size();
+
+    clearStates(num_quads);
 
     for (int q=0; q<num_quads; q++)
     {
@@ -357,7 +350,7 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
         // create our scenenode and material
         load(q);
 
-        Ogre::Vector3 caption_position = Ogre::Vector3(mesh_origin.position.x, mesh_origin.position.y + 0.5f*height + 0.25f, mesh_origin.position.z);
+        Ogre::Vector3 caption_position = Ogre::Vector3(mesh_origin.position.x, mesh_origin.position.y + 0.5f*height + text_bottom_offset_->getFloat(), mesh_origin.position.z);
 
         if (!manual_objects_[q])
         {
@@ -409,16 +402,22 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
 
         last_meshes_[q] = mesh;
 
+        Ogre::ColourValue text_color(text_color_property_->getColor().redF(), text_color_property_->getColor().greenF(), text_color_property_->getColor().blueF(), 1.0f);
 
         if (!text_nodes_[q])
         {
             text_nodes_[q] = new rviz_plugin_image_mesh::TextNode(context_->getSceneManager(), manual_objects_[q]->getParentSceneNode(), caption_position);
             text_nodes_[q]->setCaption(images->quads[q].caption);
+            text_nodes_[q]->setCharacterHeight(text_height_property_->getFloat());
+            text_nodes_[q]->setColor(text_color);
         } 
         else
         {
             text_nodes_[q]->setCaption(images->quads[q].caption);
             text_nodes_[q]->setPosition(caption_position);
+            text_nodes_[q]->setCharacterHeight(text_height_property_->getFloat());
+            text_nodes_[q]->setColor(text_color);
+
         }
 
     }
@@ -605,7 +604,7 @@ bool MeshDisplayCustom::updateCamera(int index, bool update_image)
     position = Ogre::Vector3(projector_point[0], projector_point[1], projector_point[2] );
     orientation = Ogre::Quaternion(mesh_poses_[index].orientation.w, mesh_poses_[index].orientation.x, mesh_poses_[index].orientation.y, mesh_poses_[index].orientation.z);
 
-    // Update orientation with 90 deg offset
+    // Update orientation with 90 deg offset (xy to xz)
     orientation = orientation * Ogre::Quaternion( Ogre::Degree( -90 ), Ogre::Vector3::UNIT_X );
 
     // convert vision (Z-forward) frame to ogre frame (Z-out)
@@ -746,14 +745,14 @@ void MeshDisplayCustom::processImage(int index, const sensor_msgs::Image& msg)
     }
 
     // update image alpha
-    for(int i = 0; i < cv_ptr->image.rows; i++)
-    {
-        for(int j = 0; j < cv_ptr->image.cols; j++)
-        {
-            cv::Vec4b& pixel = cv_ptr->image.at<cv::Vec4b>(i,j);
-            pixel[3] = image_alpha_property_->getFloat()*255;
-        }
-    }
+    // for(int i = 0; i < cv_ptr->image.rows; i++)
+    // {
+    //     for(int j = 0; j < cv_ptr->image.cols; j++)
+    //     {
+    //         cv::Vec4b& pixel = cv_ptr->image.at<cv::Vec4b>(i,j);
+    //         pixel[3] = image_alpha_property_->getFloat()*255;
+    //     }
+    // }
 
     // add completely white transparent border to the image so that it won't replicate colored pixels all over the mesh
     cv::Scalar value(255,255,255,0);

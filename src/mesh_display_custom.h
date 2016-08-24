@@ -145,16 +145,14 @@ private:
   
   void constructQuads( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images );
   shape_msgs::Mesh constructMesh( geometry_msgs::Pose mesh_origin, float width, float height, float border_size );
+  void clearStates(int num_quads);
 
   float time_since_last_transform_;
 
   RosTopicProperty* display_images_topic_property_;
-  FloatProperty* mesh_alpha_property_;
-  FloatProperty* image_alpha_property_;
-  ColorProperty* mesh_color_property_;
-  VectorProperty* text_offset_property_;
   ColorProperty* text_color_property_;
   FloatProperty* text_height_property_;
+  FloatProperty* text_bottom_offset_;
 
   std::vector<shape_msgs::Mesh> last_meshes_;
   std::vector<geometry_msgs::Pose> mesh_poses_;
