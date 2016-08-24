@@ -34,7 +34,7 @@
 #include <rviz/ogre_helpers/shape.h>
 #include <rviz/ogre_helpers/movable_text.h>
 
-namespace rviz_plugin_image_mesh {
+namespace rviz_textured_quads {
     class TextNode {
     public:
         TextNode(Ogre::SceneManager* sceneManager, Ogre::SceneNode* parentNode, Ogre::Vector3 position = Ogre::Vector3::ZERO) : m_sceneManager(sceneManager)

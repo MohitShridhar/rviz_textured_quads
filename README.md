@@ -1,2 +1,2 @@
-# rviz_plugin_image_mesh
-RVIZ Plugin: Displays textured images in 3D space
+# RVIZ Textured Quads
+Plugin: Displays textured images (realtime or static sensor_msgs/Image topics) in 3D space

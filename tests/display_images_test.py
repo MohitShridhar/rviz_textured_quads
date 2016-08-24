@@ -11,7 +11,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import tf
 import math
 
-from rviz_plugin_image_mesh.msg import TexturedQuad, TexturedQuadArray
+from rviz_textured_quads.msg import TexturedQuad, TexturedQuadArray
 
 
 def pub_image():

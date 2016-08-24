@@ -65,8 +65,8 @@
 #include <OGRE/OgreRenderTargetListener.h>
 #include <OGRE/OgreRenderQueueListener.h>
 
-#include <rviz_plugin_image_mesh/TexturedQuad.h>
-#include <rviz_plugin_image_mesh/TexturedQuadArray.h>
+#include <rviz_textured_quads/TexturedQuad.h>
+#include <rviz_textured_quads/TexturedQuadArray.h>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -141,9 +141,9 @@ private:
 
   void createProjector(int index);
   void addDecalToMaterial(int index, const Ogre::String& matName);
-  void updateImageMeshes( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images );
+  void updateImageMeshes( const rviz_textured_quads::TexturedQuadArray::ConstPtr& images );
   
-  void constructQuads( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images );
+  void constructQuads( const rviz_textured_quads::TexturedQuadArray::ConstPtr& images );
   shape_msgs::Mesh constructMesh( geometry_msgs::Pose mesh_origin, float width, float height, float border_size );
   void clearStates(int num_quads);
 
@@ -159,7 +159,7 @@ private:
   std::vector<int> img_widths_, img_heights_;
   std::vector<std::vector<float> > border_colors_;
   std::vector<float> border_sizes_;
-  std::vector<rviz_plugin_image_mesh::TextNode*> text_nodes_;
+  std::vector<rviz_textured_quads::TextNode*> text_nodes_;
 
   ros::NodeHandle nh_;
 

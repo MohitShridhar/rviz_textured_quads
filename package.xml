@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <package>
-  <name>rviz_plugin_image_mesh</name>
+  <name>rviz_textured_quads</name>
   <version>0.1.0</version>
   <description>RVIZ Image Mesh Plugin</description>
   <maintainer email="mohit@u.nus.edu">Mohit Shridhar</maintainer>
   <license>TORC</license>
-  <author email="fbacim@vt.edu">Felipe Bacim</author>
+  <author email="mohit@u.nus.edu">Mohit Shridhar</author>
 
   <buildtool_depend>catkin</buildtool_depend>
   

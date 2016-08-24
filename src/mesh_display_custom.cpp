@@ -85,7 +85,7 @@ MeshDisplayCustom::MeshDisplayCustom()
     , initialized_(false)
 {
     display_images_topic_property_ = new RosTopicProperty( "Display Images Topic", "",
-                                            QString::fromStdString( ros::message_traits::datatype<rviz_plugin_image_mesh::TexturedQuadArray>() ),
+                                            QString::fromStdString( ros::message_traits::datatype<rviz_textured_quads::TexturedQuadArray>() ),
                                             "shape_msgs::Mesh topic to subscribe to.",
                                             this, SLOT( updateDisplayImages() ));
 
@@ -134,7 +134,7 @@ MeshDisplayCustom::~MeshDisplayCustom()
     mesh_nodes_.clear();
 
     // clear text nodes
-    for (std::vector<rviz_plugin_image_mesh::TextNode*>::iterator it = text_nodes_.begin() ; it != text_nodes_.end(); ++it)
+    for (std::vector<rviz_textured_quads::TextNode*>::iterator it = text_nodes_.begin() ; it != text_nodes_.end(); ++it)
     {
       delete (*it);
     } 
@@ -181,7 +181,7 @@ void MeshDisplayCustom::addDecalToMaterial(int index, const Ogre::String& matNam
     if(!resource_manager.resourceGroupExists(resource_group_name))
     {
         resource_manager.createResourceGroup(resource_group_name);
-        resource_manager.addResourceLocation(ros::package::getPath("rviz_plugin_image_mesh")+"/tests/textures/", "FileSystem", resource_group_name, false);
+        resource_manager.addResourceLocation(ros::package::getPath("rviz_textured_quads")+"/tests/textures/", "FileSystem", resource_group_name, false);
         resource_manager.initialiseResourceGroup(resource_group_name);
     }
     // loads files into our resource manager
@@ -284,7 +284,7 @@ void MeshDisplayCustom::clearStates(int num_quads)
     border_sizes_.resize(num_quads);  
 }
 
-void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images )
+void MeshDisplayCustom::constructQuads( const rviz_textured_quads::TexturedQuadArray::ConstPtr& images )
 {
     int num_quads = images->quads.size();
 
@@ -406,7 +406,7 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
 
         if (!text_nodes_[q])
         {
-            text_nodes_[q] = new rviz_plugin_image_mesh::TextNode(context_->getSceneManager(), manual_objects_[q]->getParentSceneNode(), caption_position);
+            text_nodes_[q] = new rviz_textured_quads::TextNode(context_->getSceneManager(), manual_objects_[q]->getParentSceneNode(), caption_position);
             text_nodes_[q]->setCaption(images->quads[q].caption);
             text_nodes_[q]->setCharacterHeight(text_height_property_->getFloat());
             text_nodes_[q]->setColor(text_color);
@@ -423,7 +423,7 @@ void MeshDisplayCustom::constructQuads( const rviz_plugin_image_mesh::TexturedQu
     }
 }
 
-void MeshDisplayCustom::updateImageMeshes( const rviz_plugin_image_mesh::TexturedQuadArray::ConstPtr& images )
+void MeshDisplayCustom::updateImageMeshes( const rviz_textured_quads::TexturedQuadArray::ConstPtr& images )
 {
     constructQuads(images);
     updateMeshProperties();

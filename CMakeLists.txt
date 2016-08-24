@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(rviz_plugin_image_mesh)
+project(rviz_textured_quads)
 
 ## Find catkin and any catkin packages on which
 ## this package depends at build time
@@ -34,7 +34,7 @@ generate_messages(
 
 catkin_package(
   LIBRARIES
-    rviz_plugin_mesh_display_custom
+    rviz_textured_quads_custom
     ${OPENGL_LIBRARIES}
   INCLUDE_DIRS
   	src
@@ -74,24 +74,24 @@ qt4_wrap_cpp(MOC_SOURCES src/mesh_display_custom.h)
 
 include_directories(${catkin_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 
-set(VIGIR_MESH_LIB_NAME rviz_plugin_mesh_display_custom)
+set(TEXTURED_QUAD_LIB rviz_textured_quads_custom)
 
-add_library(${VIGIR_MESH_LIB_NAME}_core src/text_node.h src/mesh_display_custom.cpp ${MOC_SOURCES})
-target_link_libraries(${VIGIR_MESH_LIB_NAME}_core ${catkin_LIBRARIES} ${QT_LIBRARIES} ${Eigen_LIBRARIES})
+add_library(${TEXTURED_QUAD_LIB}_core src/text_node.h src/mesh_display_custom.cpp ${MOC_SOURCES})
+target_link_libraries(${TEXTURED_QUAD_LIB}_core ${catkin_LIBRARIES} ${QT_LIBRARIES} ${Eigen_LIBRARIES})
 
-add_dependencies(${VIGIR_MESH_LIB_NAME}_core ${catkin_EXPORTED_TARGETS})
+add_dependencies(${TEXTURED_QUAD_LIB}_core ${catkin_EXPORTED_TARGETS})
 
-add_library(${VIGIR_MESH_LIB_NAME} src/plugin_init.cpp)
-target_link_libraries(${VIGIR_MESH_LIB_NAME} ${VIGIR_MESH_LIB_NAME}_core ${catkin_LIBRARIES})
+add_library(${TEXTURED_QUAD_LIB} src/plugin_init.cpp)
+target_link_libraries(${TEXTURED_QUAD_LIB} ${TEXTURED_QUAD_LIB}_core ${catkin_LIBRARIES})
 
-add_dependencies(${VIGIR_MESH_LIB_NAME} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${TEXTURED_QUAD_LIB} ${catkin_EXPORTED_TARGETS})
 
-install(TARGETS ${VIGIR_MESH_LIB_NAME} ${VIGIR_MESH_LIB_NAME}_core
+install(TARGETS ${TEXTURED_QUAD_LIB} ${TEXTURED_QUAD_LIB}_core
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
 install(DIRECTORY textures
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rviz_plugin_mesh_display_custom
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rviz_textured_quads_custom
 )
 
 install(FILES
