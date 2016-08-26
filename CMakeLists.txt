@@ -97,14 +97,3 @@ install(DIRECTORY textures
 install(FILES
   mesh_display_custom_plugin_description.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
-
-
-# Test 1: Single image
-add_executable(single_image_test tests/single_image_test.cpp ${SOURCE_FILES} ${HEADER_FILES})
-
-add_dependencies(single_image_test ${${PROJECT_NAME}_EXPORTED_TARGETS} 
-  ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(single_image_test
-  ${catkin_LIBRARIES}
-)
