@@ -17,7 +17,7 @@ from rviz_textured_quads.msg import TexturedQuad, TexturedQuadArray
 def pub_image():
 
     rospy.init_node('rviz_display_image_test', anonymous=True)
-    image_pub = rospy.Publisher("/textured_quads", TexturedQuadArray, queue_size=10)
+    image_pub = rospy.Publisher("/semantic_targets", TexturedQuadArray, queue_size=10)
 
     img1 = cv2.imread('./textures/bebop_drone.jpg',cv2.IMREAD_COLOR)
     img_msg1 = CvBridge().cv2_to_imgmsg(img1, "bgr8")
@@ -45,10 +45,12 @@ def pub_image():
     pose.orientation.z = 0.0
     pose.orientation.w = 1.0
 
+    scale = 0.5
+
     display_image.image = img_msg1
     display_image.pose = pose
-    display_image.width = 1.0  
-    display_image.height = (1.0 * img_msg1.height)/img_msg1.width
+    display_image.width = scale 
+    display_image.height = (scale * img_msg1.height)/img_msg1.width
     display_image.border_color = [1., 0., 0., 0.5]
     display_image.border_size = 0.05
     display_image.caption = 'ICRA Video'

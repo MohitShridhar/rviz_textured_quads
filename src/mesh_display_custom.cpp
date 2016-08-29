@@ -267,6 +267,8 @@ void MeshDisplayCustom::clearStates(int num_quads)
     mesh_poses_.resize(num_quads);
     img_widths_.resize(num_quads);
     img_heights_.resize(num_quads);
+    physical_widths_.resize(num_quads);
+    physical_heights_.resize(num_quads);
 
     manual_objects_.resize(num_quads);
     last_meshes_.resize(num_quads);
@@ -344,6 +346,9 @@ void MeshDisplayCustom::constructQuads( const rviz_textured_quads::TexturedQuadA
         }
 
         shape_msgs::Mesh mesh = constructMesh(mesh_origin, width, height, border_sizes_[q]);
+
+        physical_widths_[q] = width;
+        physical_heights_[q] = height;
 
         boost::mutex::scoped_lock lock( mesh_mutex_ );
 
@@ -576,7 +581,9 @@ bool MeshDisplayCustom::updateCamera(int index, bool update_image)
         last_images_[index] = textures_[index]->getImage();
     }
 
-    if(!img_heights_[index] || !img_widths_[index] || !last_images_[index])
+    if(!img_heights_[index] || !img_widths_[index] || 
+       !physical_widths_[index] || !physical_heights_[index] || 
+       !last_images_[index])
     {        
         return false;
     }
@@ -598,7 +605,9 @@ bool MeshDisplayCustom::updateCamera(int index, bool update_image)
     trans_mat = trans_mat * Eigen::Quaterniond(0.70710678, -0.70710678f, 0.0f, 0.0f);
 
     float z_offset = (img_width > img_height) ? img_width : img_height;
-    Eigen::Vector4d projector_origin(0.0f, 0.0f, 1.0f / z_offset, 1.0f);
+    float scale_factor = 1.0f / (physical_widths_[index] > physical_heights_[index] ? physical_widths_[index] : physical_heights_[index]);
+
+    Eigen::Vector4d projector_origin(0.0f, 0.0f, 1.0f / (z_offset * scale_factor), 1.0f);
     Eigen::Vector4d projector_point = trans_mat.matrix() * projector_origin;
 
     position = Ogre::Vector3(projector_point[0], projector_point[1], projector_point[2] );
